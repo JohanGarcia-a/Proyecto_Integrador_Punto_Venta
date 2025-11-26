@@ -1,14 +1,10 @@
 package persistencia;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 import conexion.Conexion;
+import modelo.BaseDatos;
 import modelo.Categorias;
 import modelogenerico.BaseDAO;
 
@@ -16,94 +12,64 @@ public class CategoriaDAO implements BaseDAO<Categorias> {
 
 	@Override
 	public Categorias buscarPorID(int id) {
-		String sql = "SELECT Cid, Nombre FROM TablaCategorias WHERE Cid=?";
-		Categorias categoriaEncontrada = null;
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
+		ArrayList<Object[]> res = bd.consultar("TablaCategorias", "Cid, Nombre", "Cid = " + id);
 
-		try (Connection con = Conexion.getConexion(); PreparedStatement ps = con.prepareStatement(sql)) {
-			ps.setInt(1, id);
-			try (ResultSet rs = ps.executeQuery()) {
-				if (rs.next()) {
-					categoriaEncontrada = new Categorias(rs.getInt("Cid"), rs.getString("Nombre"));
-				}
-			}
-		} catch (SQLException e) {
-			System.err.println("Error al buscar la categoría: " + e.toString());
+		if (!res.isEmpty()) {
+			Object[] fila = res.get(0);
+			return new Categorias((int) fila[0], (String) fila[1]);
 		}
-		return categoriaEncontrada;
+		return null;
 	}
-	
 
+	@Override
 	public List<Categorias> ObtenerTodo() {
-		List<Categorias> categorias = new ArrayList<>();
-		String sql = "SELECT c.Cid, c.Nombre, COUNT(p.Pid) AS ConteoProductos " + "FROM TablaCategorias c "
-				+ "LEFT JOIN TablaAlmacen_Productos p ON c.Cid = p.CategoriaID " + "GROUP BY c.Cid, c.Nombre "
-				+ "ORDER BY c.Nombre";
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
+		List<Categorias> lista = new ArrayList<>();
 
-		try (Connection con = Conexion.getConexion();
-				PreparedStatement ps = con.prepareStatement(sql);
-				ResultSet rs = ps.executeQuery()) {
-			while (rs.next()) {
-				categorias.add(new Categorias(rs.getInt("Cid"), rs.getString("Nombre"), rs.getInt("ConteoProductos")));
-			}
-		} catch (SQLException e) {
-			System.err.println("Error al obtener categorías: " + e.getMessage());
+		// TRUCO: Como BaseDatos.consultar hace "SELECT [campos] FROM [tabla]
+		// [condicion]",
+		// y no usamos WHERE, metemos el JOIN y el GROUP BY en la parte de la "tabla".
+		String campos = "c.Cid, c.Nombre, COUNT(p.Pid) AS ConteoProductos";
+		String tablaCompleja = "TablaCategorias c " + "LEFT JOIN TablaAlmacen_Productos p ON c.Cid = p.CategoriaID "
+				+ "GROUP BY c.Cid, c.Nombre " + "ORDER BY c.Nombre";
+
+		ArrayList<Object[]> res = bd.consultar(tablaCompleja, campos, null);
+
+		for (Object[] fila : res) {
+			lista.add(new Categorias((int) fila[0], // Cid
+					(String) fila[1], // Nombre
+					(int) fila[2] // ConteoProductos
+			));
 		}
-		return categorias;
+		return lista;
 	}
 
 	@Override
 	public boolean agregar(Categorias entidad) {
-		String sql = "INSERT INTO TablaCategorias(Nombre) VALUES (?)";
-		boolean exito = false;
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
+		Object[] valores = { entidad.getNombre() };
 
-		try (Connection con = Conexion.getConexion();
-				PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+		int id = bd.insertar("TablaCategorias", "Nombre", valores);
 
-			ps.setString(1, entidad.getNombre());
-
-			if (ps.executeUpdate() > 0) {
-				try (ResultSet idGenerado = ps.getGeneratedKeys()) {
-					if (idGenerado.next()) {
-						entidad.setid(idGenerado.getInt(1));
-						exito = true;
-					}
-				}
-			}
-		} catch (SQLException e) {
-			System.err.println("Categoría no agregada: " + e.toString());
+		if (id != -1) {
+			entidad.setid(id);
+			return true;
 		}
-		return exito;
+		return false;
 	}
 
 	@Override
 	public boolean modificar(Categorias entidad) {
-		String sql = "UPDATE TablaCategorias SET Nombre=? WHERE Cid=?";
-		boolean exito = false;
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
+		Object[] valores = { entidad.getNombre() };
 
-		try (Connection con = Conexion.getConexion(); PreparedStatement ps = con.prepareStatement(sql)) {
-			ps.setString(1, entidad.getNombre());
-			ps.setInt(2, entidad.getid());
-			if (ps.executeUpdate() > 0) {
-				exito = true;
-			}
-		} catch (SQLException e) {
-			System.err.println("Error al modificar categoría: " + e.toString());
-		}
-		return exito;
+		return bd.modificar("TablaCategorias", "Nombre=?", "Cid=" + entidad.getid(), valores);
 	}
 
 	@Override
 	public boolean borrar(int id) {
-		String sql = "DELETE FROM TablaCategorias WHERE Cid=?";
-		boolean exito = false;
-		try (Connection con = Conexion.getConexion(); PreparedStatement ps = con.prepareStatement(sql)) {
-			ps.setInt(1, id);
-			if (ps.executeUpdate() > 0) {
-				exito = true;
-			}
-		} catch (SQLException e) {
-			System.err.println("Error al borrar categoría: " + e.toString());
-		}
-		return exito;
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
+		return bd.eliminar("TablaCategorias", "Cid = ?", id);
 	}
 }
