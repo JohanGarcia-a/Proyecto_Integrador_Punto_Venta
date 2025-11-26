@@ -1,142 +1,75 @@
 package persistencia;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import javax.swing.JOptionPane;
 
 import conexion.Conexion;
+import modelo.BaseDatos;
 import modelo.Clientes;
 import modelogenerico.BaseDAO;
-import vista.PanelCliente;
 
 public class ClienteDAO implements BaseDAO<Clientes> {
-	PanelCliente vistaClientes = new PanelCliente();
 
 	@Override
 	public Clientes buscarPorID(int id) {
-		String sql = "SELECT Cid,NombreC,NumeroTel FROM TablaClientes WHERE Cid=?";
-		Clientes clienteEncontrado = null;
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
 
-		try (Connection con = Conexion.getConexion(); PreparedStatement ps = con.prepareStatement(sql)) {
+		// Consultamos la tabla clientes
+		ArrayList<Object[]> resultados = bd.consultar("TablaClientes", "Cid, NombreC, NumeroTel", "Cid = " + id);
 
-			ps.setInt(1, id);
-			try (ResultSet rs = ps.executeQuery()) {
-
-				if (rs.next()) {
-					clienteEncontrado = new Clientes(rs.getInt("Cid"), rs.getString("NombreC"),
-							rs.getString("NumeroTel"));
-				}
-
-			}
-
-		} catch (SQLException e) {
-			JOptionPane.showMessageDialog(vistaClientes, "Error al buscar el cliente: " + e.toString());
+		if (!resultados.isEmpty()) {
+			Object[] fila = resultados.get(0);
+			return new Clientes((int) fila[0], // Cid
+					(String) fila[1], // NombreC
+					(String) fila[2] // NumeroTel
+			);
 		}
-		return clienteEncontrado;
+		return null;
 	}
 
 	@Override
 	public List<Clientes> ObtenerTodo() {
-		List<Clientes> clientes = new ArrayList<>();
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
+		List<Clientes> lista = new ArrayList<>();
 
-		String sql = "SELECT Cid,NombreC,NumeroTel FROM TablaClientes";
+		// Traemos todos los clientes
+		ArrayList<Object[]> resultados = bd.consultar("TablaClientes", "Cid, NombreC, NumeroTel", null);
 
-		try (Connection con = Conexion.getConexion();
-				PreparedStatement ps = con.prepareStatement(sql);
-				ResultSet rs = ps.executeQuery()) {
-			while (rs.next()) {
-
-				clientes.add(new Clientes(rs.getInt("Cid"), rs.getString("NombreC"), rs.getString("NumeroTel")));
-
-			}
-
-		} catch (SQLException e) {
-
-			JOptionPane.showMessageDialog(vistaClientes, e.toString());
-
+		for (Object[] fila : resultados) {
+			lista.add(new Clientes((int) fila[0], (String) fila[1], (String) fila[2]));
 		}
-		return clientes;
+		return lista;
 	}
 
 	@Override
 	public boolean agregar(Clientes entidad) {
-		String sql = "INSERT INTO TablaClientes(NombreC,NumeroTel) VALUES (?,?)";
-		boolean Exito = false;
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
 
-		try (Connection con = Conexion.getConexion();
-				PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+		Object[] valores = { entidad.getNombre(), entidad.getNumTel() };
 
-			ps.setString(1, entidad.getNombre());
-			ps.setString(2, entidad.getNumTel());
+		// Insertamos y recuperamos el ID generado
+		int idGenerado = bd.insertar("TablaClientes", "NombreC, NumeroTel", valores);
 
-			if (ps.executeUpdate() > 0) {
-
-				try (ResultSet idGenerado = ps.getGeneratedKeys()) {
-					if (idGenerado.next()) {
-						entidad.setid(idGenerado.getInt(1));
-						Exito = true;
-					}
-
-				}
-
-			}
-
-		} catch (SQLException e) {
-			JOptionPane.showMessageDialog(vistaClientes, "Cliente no agregado: " + e.toString());
-
+		if (idGenerado != -1) {
+			entidad.setid(idGenerado);
+			return true;
 		}
-
-		return Exito;
+		return false;
 	}
 
 	@Override
 	public boolean modificar(Clientes entidad) {
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
 
-		String sql = "UPDATE TablaClientes SET NombreC=?, NumeroTel=? WHERE Cid=?";
-		boolean exito = false;
+		Object[] valores = { entidad.getNombre(), entidad.getNumTel() };
 
-		try (Connection con = Conexion.getConexion(); PreparedStatement ps = con.prepareStatement(sql)) {
-
-			ps.setString(1, entidad.getNombre());
-			ps.setString(2, entidad.getNumTel());
-			ps.setInt(3, entidad.getid());
-
-			if (ps.executeUpdate() > 0) {
-				exito = true;
-			}
-
-		} catch (SQLException e) {
-			JOptionPane.showMessageDialog(vistaClientes, "Error al modificar " + e.toString());
-		}
-
-		return exito;
+		// Actualizamos
+		return bd.modificar("TablaClientes", "NombreC=?, NumeroTel=?", "Cid=" + entidad.getid(), valores);
 	}
 
 	@Override
 	public boolean borrar(int id) {
-
-		String sql = "DELETE FROM TablaClientes WHERE Cid=? ";
-		boolean exito = false;
-
-		try (Connection con = Conexion.getConexion(); PreparedStatement ps = con.prepareStatement(sql)) {
-
-			ps.setInt(1, id);
-
-			if (ps.executeUpdate() > 0) {
-				exito = true;
-			}
-
-		} catch (SQLException e) {
-			JOptionPane.showMessageDialog(vistaClientes, "Error al borrar " + e.toString());
-
-		}
-
-		return exito;
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
+		return bd.eliminar("TablaClientes", "Cid = ?", id);
 	}
-
 }
