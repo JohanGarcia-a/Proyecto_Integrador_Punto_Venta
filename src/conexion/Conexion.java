@@ -1,29 +1,25 @@
 package conexion;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-
-import javax.swing.JOptionPane;
 
 public class Conexion {
 
+	// Configuración centralizada
+	// Ajusta estos valores si cambian en el futuro
+	private static final String SERVIDOR = "JOAHAN:1433";
+	private static final String BASE_DATOS = "MyPos";
+	private static final String USUARIO = "sa";
+	private static final String PASSWORD = "3312";
+
+	// Este método estático actúa como "fábrica" o puente.
+	// Instancia tus clases obligatorias (Conexion_SQL -> ConexionBD) y devuelve la
+	// conexión.
 	public static Connection getConexion() {
-		String url = "jdbc:sqlserver://JOAHAN:1433;" + "database=MyPos;" + "user=sa;" + "password=3312;"
-				+ "trustServerCertificate=true";
 
-		try {
+		// Aquí se cumple tu requisito: Se instancia Conexion_SQL que hereda de
+		// ConexionBD
+		ConexionBD miConexion = new Conexion_SQL(SERVIDOR, BASE_DATOS, USUARIO, PASSWORD);
 
-			Connection con = DriverManager.getConnection(url);
-
-			return con;
-
-		} catch (SQLException e) {
-
-			JOptionPane.showMessageDialog(null, e.toString());
-
-			return null;
-			
-		}
+		return miConexion.getConexion();
 	}
 }
