@@ -1,151 +1,91 @@
 package persistencia;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import javax.swing.JOptionPane;
 
 import conexion.Conexion;
+import modelo.BaseDatos;
 import modelo.Empleado;
 import modelogenerico.BaseDAO;
-import vista.PanelEmpleado;
 
 public class EmpleadoDAO implements BaseDAO<Empleado> {
-	PanelEmpleado vistaEmpleado = new PanelEmpleado();
 
 	@Override
 	public Empleado buscarPorID(int id) {
-		// --- MODIFICACIÓN: Se añade la columna Password a la consulta ---
-		String sql = "SELECT Eid,NombreE,NumeroTel,Rol,Password FROM TablaEmpleados WHERE Eid=?";
-		Empleado empleadoEncontrado = null;
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
+		ArrayList<Object[]> res = bd.consultar("TablaEmpleados", "Eid, NombreE, NumeroTel, Rol, Password",
+				"Eid = " + id);
 
-		try (Connection con = Conexion.getConexion(); PreparedStatement ps = con.prepareStatement(sql)) {
-			ps.setInt(1, id);
-			try (ResultSet rs = ps.executeQuery()) {
-				if (rs.next()) {
-					// --- MODIFICACIÓN: Se pasa la contraseña al constructor ---
-					empleadoEncontrado = new Empleado(rs.getInt("Eid"), rs.getString("NombreE"),
-							rs.getString("NumeroTel"), rs.getString("Rol"), rs.getString("Password"));
-				}
-			}
-		} catch (SQLException e) {
-			JOptionPane.showMessageDialog(vistaEmpleado, "Error al buscar el empleado: " + e.toString());
+		if (!res.isEmpty()) {
+			Object[] f = res.get(0);
+			return new Empleado((int) f[0], // Eid
+					(String) f[1], // NombreE
+					(String) f[2], // NumeroTel
+					(String) f[3], // Rol
+					(String) f[4] // Password
+			);
 		}
-		return empleadoEncontrado;
+		return null;
 	}
 
 	@Override
 	public List<Empleado> ObtenerTodo() {
-		List<Empleado> empleados = new ArrayList<>();
-		// --- MODIFICACIÓN: Se añade la columna Password a la consulta ---
-		String sql = "SELECT Eid,NombreE,NumeroTel,Rol,Password FROM TablaEmpleados";
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
+		List<Empleado> lista = new ArrayList<>();
+		ArrayList<Object[]> res = bd.consultar("TablaEmpleados", "Eid, NombreE, NumeroTel, Rol, Password", null);
 
-		try (Connection con = Conexion.getConexion();
-				PreparedStatement ps = con.prepareStatement(sql);
-				ResultSet rs = ps.executeQuery()) {
-			while (rs.next()) {
-				// --- MODIFICACIÓN: Se pasa la contraseña al constructor ---
-				empleados.add(new Empleado(rs.getInt("Eid"), rs.getString("NombreE"), rs.getString("NumeroTel"),
-						rs.getString("Rol"), rs.getString("Password")));
-			}
-		} catch (SQLException e) {
-			JOptionPane.showMessageDialog(vistaEmpleado, e.toString());
+		for (Object[] f : res) {
+			lista.add(new Empleado((int) f[0], (String) f[1], (String) f[2], (String) f[3], (String) f[4]));
 		}
-		return empleados;
+		return lista;
 	}
 
 	@Override
-	public boolean agregar(Empleado entidad) {
-		// --- MODIFICACIÓN 1: Se añade la columna Password al SQL ---
-		String sql = "INSERT INTO TablaEmpleados(NombreE,NumeroTel,Rol,Password) VALUES (?,?,?,?)";
-		boolean Exito = false;
+	public boolean agregar(Empleado e) {
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
 
-		try (Connection con = Conexion.getConexion();
-				PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+		Object[] valores = { e.getNombre(), e.getNumTel(), e.getRol(), e.getContraseña() };
 
-			ps.setString(1, entidad.getNombre());
-			ps.setString(2, entidad.getNumTel());
-			ps.setString(3, entidad.getRol());
-			ps.setString(4, entidad.getContraseña()); // <-- MODIFICACIÓN 2: Se añade el parámetro de la contraseña
+		int id = bd.insertar("TablaEmpleados", "NombreE, NumeroTel, Rol, Password", valores);
 
-			if (ps.executeUpdate() > 0) {
-				try (ResultSet idGenerado = ps.getGeneratedKeys()) {
-					if (idGenerado.next()) {
-						entidad.setid(idGenerado.getInt(1));
-						Exito = true;
-					}
-				}
-			}
-		} catch (SQLException e) {
-			JOptionPane.showMessageDialog(vistaEmpleado, "Empleado no agregado: " + e.toString());
+		if (id != -1) {
+			e.setid(id);
+			return true;
 		}
-		return Exito;
+		return false;
 	}
 
 	@Override
-	public boolean modificar(Empleado entidad) {
-		// --- MODIFICACIÓN 1: Se añade la columna Password al SQL ---
-		String sql = "UPDATE TablaEmpleados SET NombreE=?, NumeroTel=?, Rol=?, Password=? WHERE Eid=?";
-		boolean exito = false;
+	public boolean modificar(Empleado e) {
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
 
-		try (Connection con = Conexion.getConexion(); PreparedStatement ps = con.prepareStatement(sql)) {
+		Object[] valores = { e.getNombre(), e.getNumTel(), e.getRol(), e.getContraseña() };
 
-			ps.setString(1, entidad.getNombre());
-			ps.setString(2, entidad.getNumTel());
-			ps.setString(3, entidad.getRol());
-			ps.setString(4, entidad.getContraseña()); // <-- MODIFICACIÓN 2: Se añade el parámetro de la contraseña
-			ps.setInt(5, entidad.getid()); // <-- MODIFICACIÓN 3: El índice del ID ahora es 5
-
-			if (ps.executeUpdate() > 0) {
-				exito = true;
-			}
-		} catch (SQLException e) {
-			JOptionPane.showMessageDialog(vistaEmpleado, "Error al modificar " + e.toString());
-		}
-		return exito;
+		return bd.modificar("TablaEmpleados", "NombreE=?, NumeroTel=?, Rol=?, Password=?", "Eid=" + e.getid(), valores);
 	}
 
 	@Override
 	public boolean borrar(int id) {
-		// (Este método no necesita cambios)
-		String sql = "DELETE FROM TablaEmpleados WHERE Eid=? ";
-		boolean exito = false;
-		try (Connection con = Conexion.getConexion(); PreparedStatement ps = con.prepareStatement(sql)) {
-			ps.setInt(1, id);
-			if (ps.executeUpdate() > 0) {
-				exito = true;
-			}
-		} catch (SQLException e) {
-			JOptionPane.showMessageDialog(vistaEmpleado, "Error al borrar " + e.toString());
-		}
-		return exito;
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
+		return bd.eliminar("TablaEmpleados", "Eid = ?", id);
 	}
 
-	// --- NUEVO MÉTODO PARA EL LOGIN ---
-	public Empleado autenticar(String nombreUsuario, String contaseña) {
-		Empleado empleado = null;
-		String sql = "SELECT Eid, NombreE, NumeroTel, Rol, Password FROM TablaEmpleados WHERE NombreE = ? AND Password = ?";
+	// --- MÉTODO ESPECIAL PARA LOGIN ---
+	public Empleado autenticar(String usuario, String password) {
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
 
-		try (Connection con = Conexion.getConexion(); PreparedStatement ps = con.prepareStatement(sql)) {
+		// Construimos la condición WHERE para buscar por usuario Y contraseña
+		// NOTA: Para mayor seguridad en el futuro, evita concatenar strings directos,
+		// pero por ahora mantenemos la lógica funcional con tu BaseDatos.
+		String condicion = "NombreE = '" + usuario + "' AND Password = '" + password + "'";
 
-			ps.setString(1, nombreUsuario);
-			ps.setString(2, contaseña);
+		ArrayList<Object[]> res = bd.consultar("TablaEmpleados", "Eid, NombreE, NumeroTel, Rol, Password", condicion);
 
-			try (ResultSet rs = ps.executeQuery()) {
-				if (rs.next()) {
-					empleado = new Empleado(rs.getInt("Eid"), rs.getString("NombreE"), rs.getString("NumeroTel"),
-							rs.getString("Rol"), rs.getString("Password"));
-				}
-			}
-		} catch (SQLException e) {
-			System.err.println("Error al autenticar empleado: " + e.getMessage());
-			// Nota: En el login, es mejor no mostrar un JOptionPane, solo registrar el
-			// error.
+		if (!res.isEmpty()) {
+			Object[] f = res.get(0);
+			// Login exitoso: retornamos el objeto completo
+			return new Empleado((int) f[0], (String) f[1], (String) f[2], (String) f[3], (String) f[4]);
 		}
-		return empleado; // Devuelve el objeto Empleado si lo encuentra, o null si no
+		return null; // Login fallido
 	}
 }
