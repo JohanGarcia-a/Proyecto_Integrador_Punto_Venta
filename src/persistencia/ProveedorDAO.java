@@ -1,141 +1,84 @@
 package persistencia;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import javax.swing.JOptionPane;
 
 import conexion.Conexion;
+import modelo.BaseDatos; 
 import modelo.Proveedor;
 import modelogenerico.BaseDAO;
-import vista.PanelProveedor;
 
 public class ProveedorDAO implements BaseDAO<Proveedor> {
-	PanelProveedor vistaProveedor = new PanelProveedor();
 
 	@Override
 	public Proveedor buscarPorID(int id) {
-		String sql = "SELECT Pid,NombreP,NumeroTel FROM TablaProveedores WHERE Pid=?";
-		Proveedor proveedorEncontrado = null;
+		// 1. Instanciamos BaseDatos con la conexión
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
 
-		try (Connection con = Conexion.getConexion(); PreparedStatement ps = con.prepareStatement(sql)) {
+		// 2. Ejecutamos la consulta (pedimos campos específicos o * si quieres todos)
+		// Nota: "Pid = " + id funciona bien aquí.
+		ArrayList<Object[]> resultados = bd.consultar("TablaProveedores", "Pid, NombreP, NumeroTel", "Pid = " + id);
 
-			ps.setInt(1, id);
-			try (ResultSet rs = ps.executeQuery()) {
-
-				if (rs.next()) {
-					proveedorEncontrado = new Proveedor(rs.getInt("Pid"), rs.getString("NombreP"),
-							rs.getString("NumeroTel"));
-				}
-
-			}
-
-		} catch (SQLException e) {
-			JOptionPane.showMessageDialog(vistaProveedor, "Error al buscar el Proveedor: " + e.toString());
+		// 3. Convertimos el resultado (si existe) a un objeto Proveedor
+		if (!resultados.isEmpty()) {
+			Object[] fila = resultados.get(0);
+			// Hacemos cast (conversión) de Object a los tipos correctos
+			return new Proveedor((int) fila[0], // Pid
+					(String) fila[1], // NombreP
+					(String) fila[2] // NumeroTel
+			);
 		}
-		return proveedorEncontrado;
+		return null; // Si no se encontró nada
 	}
 
 	@Override
 	public List<Proveedor> ObtenerTodo() {
-		List<Proveedor> proveedores = new ArrayList<>();
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
+		List<Proveedor> listaProveedores = new ArrayList<>();
 
-		String sql = "SELECT Pid,NombreP,NumeroTel FROM TablaProveedores";
+	
+		ArrayList<Object[]> resultados = bd.consultar("TablaProveedores", "Pid, NombreP, NumeroTel", null);
 
-		try (Connection con = Conexion.getConexion();
-				PreparedStatement ps = con.prepareStatement(sql);
-				ResultSet rs = ps.executeQuery()) {
-			while (rs.next()) {
-
-				proveedores.add(new Proveedor(rs.getInt("Pid"), rs.getString("NombreP"), rs.getString("NumeroTel")));
-
-			}
-
-		} catch (SQLException e) {
-
-			JOptionPane.showMessageDialog(vistaProveedor, e.toString());
-
+		// Recorremos los resultados genéricos y los convertimos a Proveedores
+		for (Object[] fila : resultados) {
+			listaProveedores.add(new Proveedor((int) fila[0], (String) fila[1], (String) fila[2]));
 		}
-		return proveedores;
+		return listaProveedores;
 	}
 
 	@Override
 	public boolean agregar(Proveedor entidad) {
-		String sql = "INSERT INTO TablaProveedores(NombreP,NumeroTel) VALUES (?,?)";
-		boolean Exito = false;
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
 
-		try (Connection con = Conexion.getConexion();
-				PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+		// Preparamos los valores en un arreglo de Objetos
+		Object[] valores = { entidad.getNombre(), entidad.getNumTel() };
 
-			ps.setString(1, entidad.getNombre());
-			ps.setString(2, entidad.getNumTel());
+		// Llamamos a insertar. Nos devuelve el ID generado.
+		int idGenerado = bd.insertar("TablaProveedores", "NombreP, NumeroTel", valores);
 
-			if (ps.executeUpdate() > 0) {
-
-				try (ResultSet idGenerado = ps.getGeneratedKeys()) {
-					if (idGenerado.next()) {
-						entidad.setid(idGenerado.getInt(1));
-						Exito = true;
-					}
-
-				}
-
-			}
-
-		} catch (SQLException e) {
-			JOptionPane.showMessageDialog(vistaProveedor, "Proveedor no agregado: " + e.toString());
-
+		if (idGenerado != -1) {
+			entidad.setid(idGenerado); // Actualizamos el objeto con su nuevo ID
+			return true;
 		}
-
-		return Exito;
+		return false;
 	}
 
 	@Override
 	public boolean modificar(Proveedor entidad) {
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
 
-		String sql = "UPDATE TablaProveedores SET NombreP=?, NumeroTel=? WHERE Pid=?";
-		boolean exito = false;
+		// Valores a actualizar
+		Object[] valores = { entidad.getNombre(), entidad.getNumTel() };
 
-		try (Connection con = Conexion.getConexion(); PreparedStatement ps = con.prepareStatement(sql)) {
-
-			ps.setString(1, entidad.getNombre());
-			ps.setString(2, entidad.getNumTel());
-			ps.setInt(3, entidad.getid());
-			if (ps.executeUpdate() > 0) {
-				exito = true;
-			}
-
-		} catch (SQLException e) {
-			JOptionPane.showMessageDialog(vistaProveedor, "Error al modificar " + e.toString());
-		}
-
-		return exito;
+		// OJO: La condición "Pid=" se concatena aquí, los valores van en el array
+		// El método 'modificar' espera: tabla, asignaciones(sql), condicion, valores
+		return bd.modificar("TablaProveedores", "NombreP=?, NumeroTel=?", "Pid=" + entidad.getid(), valores);
 	}
 
 	@Override
 	public boolean borrar(int id) {
-
-		String sql = "DELETE FROM TablaProveedores WHERE Pid=? ";
-		boolean exito = false;
-
-		try (Connection con = Conexion.getConexion(); PreparedStatement ps = con.prepareStatement(sql)) {
-
-			ps.setInt(1, id);
-
-			if (ps.executeUpdate() > 0) {
-				exito = true;
-			}
-
-		} catch (SQLException e) {
-			JOptionPane.showMessageDialog(vistaProveedor, "Error al borrar " + e.toString());
-
-		}
-
-		return exito;
+		BaseDatos bd = new BaseDatos(Conexion.getConexion());
+		// El método 'eliminar' espera: tabla, condicion(sql con ?), valor
+		return bd.eliminar("TablaProveedores", "Pid = ?", id);
 	}
-
 }
