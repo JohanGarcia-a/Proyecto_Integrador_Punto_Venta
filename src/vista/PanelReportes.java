@@ -9,6 +9,7 @@ public class PanelReportes extends JPanel {
 	private PanelReporteVentas panelVentas;
 	private PanelReporteInventario panelInventario;
 	private PanelHistorialVentas panelTickets;
+	private PanelReporteCaja panelCaja;
 
 	public PanelReportes() {
 		setLayout(new BorderLayout());
@@ -26,11 +27,11 @@ public class PanelReportes extends JPanel {
 		panelTickets = new PanelHistorialVentas();
 		tabbedPane.addTab("Reportes de tickets", null, panelTickets, "Reportes relacionados con tickets");
 
+		panelCaja = new PanelReporteCaja();
+		tabbedPane.addTab("Historial de Caja", null, panelCaja, "Ver cortes de caja pasados");
 		add(tabbedPane, BorderLayout.CENTER);
 	}
 
-	// Getters para que el ControladorReportes pueda acceder a los paneles de las
-	// pestañas
 	public PanelReporteVentas getPanelVentas() {
 		return panelVentas;
 	}
@@ -41,5 +42,9 @@ public class PanelReportes extends JPanel {
 
 	public PanelHistorialVentas getPanelTickets() {
 		return panelTickets;
+	}
+
+	public PanelReporteCaja getPanelCaja() {
+		return panelCaja;
 	}
 }

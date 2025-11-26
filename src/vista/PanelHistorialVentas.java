@@ -20,6 +20,7 @@ public class PanelHistorialVentas extends JPanel {
 	private JTable tablaVentas;
 	private DefaultTableModel modeloTabla;
 	private JButton btnReimprimir;
+	private JButton btnDevolucion;
 
 	public PanelHistorialVentas() {
 		setLayout(new BorderLayout(10, 10));
@@ -35,6 +36,8 @@ public class PanelHistorialVentas extends JPanel {
 
 		// Panel con el botón de acción
 		JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+		btnDevolucion = new JButton("Devolver Venta (Cancelar)");
+		panelBotones.add(btnDevolucion);
 		btnReimprimir = new JButton("Reimprimir Ticket Seleccionado");
 		panelBotones.add(btnReimprimir);
 
@@ -61,6 +64,10 @@ public class PanelHistorialVentas extends JPanel {
 
 	public void addReimprimirListener(ActionListener listener) {
 		btnReimprimir.addActionListener(listener);
+	}
+
+	public void addDevolucionListener(ActionListener listener) {
+		btnDevolucion.addActionListener(listener);
 	}
 
 	public void mostrarMensaje(String mensaje) {

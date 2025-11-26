@@ -13,11 +13,13 @@ public class PanelReporteVentas extends JPanel {
 	private JComboBox<String> comboMes;
 	private JSpinner spinnerAnio;
 	private JButton btnGenerarVentasMesSeleccionado;
-	private JButton btnVerImprimirJasper; // <-- 1. AÑADE EL NUEVO BOTÓN
+	private JButton btnVerImprimirJasper;
+	private JButton btnExportarExcel;
 
 	private JTable tablaResultados;
 	private DefaultTableModel modeloTabla;
 	private JLabel lblTotalVentas;
+	private JComponent tnExportarExcel;
 
 	public PanelReporteVentas() {
 		setLayout(new BorderLayout(10, 10));
@@ -43,7 +45,10 @@ public class PanelReporteVentas extends JPanel {
 		btnVerImprimirJasper = new JButton("Ver/Imprimir Reporte (Día/Mes)");
 		btnVerImprimirJasper.setEnabled(false); // Se activará después de generar un reporte en tabla
 		panelBotones.add(btnVerImprimirJasper);
-		// --- FIN ---
+
+		btnExportarExcel = new JButton("Exportar a Excel");
+		btnExportarExcel.setEnabled(false); // Desactivado hasta que haya datos
+		panelBotones.add(btnExportarExcel);
 
 		add(panelBotones, BorderLayout.NORTH);
 
@@ -60,7 +65,9 @@ public class PanelReporteVentas extends JPanel {
 
 	public void mostrarResultados(TableModel tableModel) {
 		tablaResultados.setModel(tableModel);
-		btnVerImprimirJasper.setEnabled(tableModel.getRowCount() > 0); // Activa el botón si hay datos
+		boolean hayDatos = tableModel.getRowCount() > 0;
+		btnVerImprimirJasper.setEnabled(hayDatos);
+		btnExportarExcel.setEnabled(hayDatos); // <--- 3. ACTIVAR SI HAY DATOS
 	}
 
 	public void actualizarTotal(double total) {
@@ -94,5 +101,14 @@ public class PanelReporteVentas extends JPanel {
 
 	public void setComboMes(JComboBox<String> comboMes) {
 		this.comboMes = comboMes;
+	}
+
+	public void addExportarExcelListener(ActionListener listener) {
+		btnExportarExcel.addActionListener(listener);
+	}
+
+	// <--- 5. IMPORTANTE: GETTER PARA LA TABLA (El controlador lo necesita)
+	public JTable getTablaResultados() {
+		return tablaResultados;
 	}
 }

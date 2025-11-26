@@ -201,4 +201,71 @@ public class VentaDAO {
 		}
 		return resumen;
 	}
+	
+	public boolean realizarDevolucion(int ventaId) {
+		Connection con = null;
+		boolean exito = false;
+
+		// SQL 1: Obtener qué productos se vendieron y cuántos
+		String sqlDetalles = "SELECT ProductoID, Cantidad FROM TablaVentaDetalle WHERE VentaID = ?";
+
+		// SQL 2: Regresar esos productos al inventario
+		String sqlRestock = "UPDATE TablaAlmacen_Productos SET Cantidad = Cantidad + ? WHERE Pid = ?";
+
+		// SQL 3: Anular la venta visualmente (Total a 0 y marcar cliente)
+		// Nota: Hacemos esto para no borrar el registro histórico, pero anular su valor
+		// financiero.
+		String sqlAnular = "UPDATE TablaVentas SET Total = 0, ClienteID = NULL WHERE VentaID = ?";
+		// Opcional: Si tienes una columna 'Status', úsala. Si no, este truco funciona.
+
+		try {
+			con = Conexion.getConexion();
+			con.setAutoCommit(false); // Iniciar transacción segura
+
+			// Paso 1: Recuperar productos
+			try (PreparedStatement psDet = con.prepareStatement(sqlDetalles)) {
+				psDet.setInt(1, ventaId);
+				try (ResultSet rs = psDet.executeQuery()) {
+					// Preparamos la consulta de restock
+					try (PreparedStatement psRestock = con.prepareStatement(sqlRestock)) {
+						while (rs.next()) {
+							int prodId = rs.getInt("ProductoID");
+							int cant = rs.getInt("Cantidad");
+
+							// Paso 2: Devolver al stock uno por uno
+							psRestock.setInt(1, cant); // Sumar cantidad
+							psRestock.setInt(2, prodId); // Al producto ID
+							psRestock.executeUpdate();
+						}
+					}
+				}
+			}
+
+			// Paso 3: Marcar venta como devuelta/cancelada
+			try (PreparedStatement psAnular = con.prepareStatement(sqlAnular)) {
+				psAnular.setInt(1, ventaId);
+				psAnular.executeUpdate();
+			}
+
+			con.commit(); // Confirmar cambios
+			exito = true;
+
+		} catch (SQLException e) {
+			System.err.println("Error en devolución: " + e.getMessage());
+			try {
+				if (con != null)
+					con.rollback();
+			} catch (SQLException ex) {
+			}
+		} finally {
+			try {
+				if (con != null) {
+					con.setAutoCommit(true);
+					con.close();
+				}
+			} catch (SQLException e) {
+			}
+		}
+		return exito;
+	}
 }

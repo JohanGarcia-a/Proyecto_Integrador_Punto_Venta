@@ -2,7 +2,6 @@ package controlador;
 
 import java.awt.event.ActionListener;
 import java.util.List;
-import javax.swing.JOptionPane;
 
 import modelo.CorteCaja;
 import modelo.Empleado;
@@ -25,7 +24,6 @@ public class ControladorMovimientosCaja extends ControladorGenerico<MovimientoCa
 		this.usuarioActual = usuario;
 		this.corteActual = corte;
 
-	
 		for (ActionListener al : vista.getBguardar().getActionListeners()) {
 			vista.getBguardar().removeActionListener(al);
 		}

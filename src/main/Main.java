@@ -16,15 +16,12 @@ public class Main {
 		}
 
 		EventQueue.invokeLater(() -> {
-			
-		
+
 			VistaLogin vistaLogin = new VistaLogin();
 			EmpleadoDAO empleadoDAO = new EmpleadoDAO();
 
-			
 			new ControladorLogin(vistaLogin, empleadoDAO);
 
-			
 			vistaLogin.setVisible(true);
 		});
 	}

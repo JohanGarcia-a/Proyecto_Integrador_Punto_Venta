@@ -1,12 +1,8 @@
 package vista;
 
 import javax.swing.*;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
+import java.awt.*;
 import java.awt.event.ActionListener;
-import java.awt.SystemColor;
-import java.awt.Color;
 
 public class VistaLogin extends JFrame {
 	private JTextField txtUsuario;
@@ -15,71 +11,113 @@ public class VistaLogin extends JFrame {
 
 	public VistaLogin() {
 		setTitle("Iniciar Sesión - POS");
-		setSize(400, 200);
+		setSize(400, 450);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setLocationRelativeTo(null); // Centrar en la pantalla
+		setResizable(false);
 
 		JPanel panel = new JPanel(new GridBagLayout());
-		panel.setBackground(SystemColor.activeCaption);
+		panel.setBackground(Color.WHITE);
 		getContentPane().add(panel);
 
-		// --- Componente 1: Etiqueta "Usuario:" ---
+		// --- Título ---
+		JLabel lblTitulo = new JLabel("Bienvenido");
+		lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 26));
+		lblTitulo.setForeground(new Color(50, 50, 50));
+		
+		GridBagConstraints gbcTitulo = new GridBagConstraints();
+		gbcTitulo.gridx = 0;
+		gbcTitulo.gridy = 0;
+		gbcTitulo.gridwidth = 2;
+		gbcTitulo.anchor = GridBagConstraints.CENTER;
+		gbcTitulo.insets = new Insets(10, 10, 10, 10);
+		panel.add(lblTitulo, gbcTitulo);
+
+		// --- Icono (Opcional) ---
+		try {
+			ImageIcon icon = new ImageIcon(getClass().getResource("/Iconos/empleados.png"));
+			Image img = icon.getImage().getScaledInstance(64, 64, Image.SCALE_SMOOTH);
+			JLabel lblIcono = new JLabel(new ImageIcon(img));
+			
+			GridBagConstraints gbcIcono = new GridBagConstraints();
+			gbcIcono.gridx = 0;
+			gbcIcono.gridy = 1;
+			gbcIcono.gridwidth = 2;
+			gbcIcono.anchor = GridBagConstraints.CENTER;
+			gbcIcono.insets = new Insets(0, 10, 20, 10);
+			panel.add(lblIcono, gbcIcono);
+		} catch (Exception e) {
+			// Ignorar si no se encuentra la imagen
+		}
+
+		// --- Etiqueta Usuario ---
 		JLabel lblUsuario = new JLabel("Usuario:");
-		GridBagConstraints gbc_lblUsuario = new GridBagConstraints();
-		gbc_lblUsuario.insets = new Insets(5, 5, 5, 5);
-		gbc_lblUsuario.anchor = GridBagConstraints.EAST; // Alineado a la derecha de su celda
-		gbc_lblUsuario.gridx = 0;
-		gbc_lblUsuario.gridy = 0;
-		panel.add(lblUsuario, gbc_lblUsuario);
+		lblUsuario.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+		lblUsuario.setForeground(Color.DARK_GRAY);
+		
+		GridBagConstraints gbcLblUsuario = new GridBagConstraints();
+		gbcLblUsuario.gridx = 0;
+		gbcLblUsuario.gridy = 2;
+		gbcLblUsuario.anchor = GridBagConstraints.WEST;
+		gbcLblUsuario.insets = new Insets(5, 30, 5, 5);
+		panel.add(lblUsuario, gbcLblUsuario);
 
-		// --- Componente 2: Campo de Texto para Usuario ---
+		// --- Campo Usuario ---
 		txtUsuario = new JTextField(20);
-		GridBagConstraints gbc_txtUsuario = new GridBagConstraints();
-		gbc_txtUsuario.insets = new Insets(5, 5, 5, 5);
-		gbc_txtUsuario.fill = GridBagConstraints.HORIZONTAL; // Se expande horizontalmente
-		gbc_txtUsuario.weightx = 1.0; // Permite que la columna crezca
-		gbc_txtUsuario.gridx = 1;
-		gbc_txtUsuario.gridy = 0;
-		panel.add(txtUsuario, gbc_txtUsuario);
+		txtUsuario.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+		
+		GridBagConstraints gbcTxtUsuario = new GridBagConstraints();
+		gbcTxtUsuario.gridx = 0;
+		gbcTxtUsuario.gridy = 3;
+		gbcTxtUsuario.gridwidth = 2;
+		gbcTxtUsuario.fill = GridBagConstraints.HORIZONTAL;
+		gbcTxtUsuario.insets = new Insets(0, 30, 10, 30);
+		panel.add(txtUsuario, gbcTxtUsuario);
 
-		// --- Componente 3: Etiqueta "Contraseña:" ---
+		// --- Etiqueta Contraseña ---
 		JLabel lblPassword = new JLabel("Contraseña:");
-		GridBagConstraints gbc_lblPassword = new GridBagConstraints();
-		gbc_lblPassword.insets = new Insets(5, 5, 5, 5);
-		gbc_lblPassword.anchor = GridBagConstraints.EAST;
-		gbc_lblPassword.gridx = 0;
-		gbc_lblPassword.gridy = 1;
-		panel.add(lblPassword, gbc_lblPassword);
+		lblPassword.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+		lblPassword.setForeground(Color.DARK_GRAY);
+		
+		GridBagConstraints gbcLblPassword = new GridBagConstraints();
+		gbcLblPassword.gridx = 0;
+		gbcLblPassword.gridy = 4;
+		gbcLblPassword.anchor = GridBagConstraints.WEST;
+		gbcLblPassword.insets = new Insets(5, 30, 5, 5);
+		panel.add(lblPassword, gbcLblPassword);
 
-		// --- Componente 4: Campo de Texto para Contraseña ---
+
 		txtPassword = new JPasswordField(20);
-		GridBagConstraints gbc_txtPassword = new GridBagConstraints();
-		gbc_txtPassword.insets = new Insets(5, 5, 5, 5);
-		gbc_txtPassword.fill = GridBagConstraints.HORIZONTAL;
-		gbc_txtPassword.weightx = 1.0;
-		gbc_txtPassword.gridx = 1;
-		gbc_txtPassword.gridy = 1;
-		panel.add(txtPassword, gbc_txtPassword);
+		txtPassword.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+		
+		GridBagConstraints gbcTxtPassword = new GridBagConstraints();
+		gbcTxtPassword.gridx = 0;
+		gbcTxtPassword.gridy = 5;
+		gbcTxtPassword.gridwidth = 2;
+		gbcTxtPassword.fill = GridBagConstraints.HORIZONTAL;
+		gbcTxtPassword.insets = new Insets(0, 30, 20, 30);
+		panel.add(txtPassword, gbcTxtPassword);
 
-		// --- Componente 5: Botón "Ingresar" ---
+		// --- Botón Ingresar ---
 		btnIngresar = new JButton("Ingresar");
-		btnIngresar.setBackground(new Color(0, 255, 0));
-		GridBagConstraints gbc_btnIngresar = new GridBagConstraints();
-		gbc_btnIngresar.insets = new Insets(5, 5, 5, 5);
-		gbc_btnIngresar.anchor = GridBagConstraints.EAST; // Alineado a la derecha de su celda
-		gbc_btnIngresar.gridx = 1;
-		gbc_btnIngresar.gridy = 2;
-		panel.add(btnIngresar, gbc_btnIngresar);
-
+		btnIngresar.setFont(new Font("Segoe UI", Font.BOLD, 14));
+		btnIngresar.setBackground(new Color(0, 123, 255));
+		btnIngresar.setForeground(Color.WHITE);
+		btnIngresar.setFocusPainted(false);
+		btnIngresar.setBorderPainted(false);
+		btnIngresar.setCursor(new Cursor(Cursor.HAND_CURSOR));
 		
+		GridBagConstraints gbcBtnIngresar = new GridBagConstraints();
+		gbcBtnIngresar.gridx = 0;
+		gbcBtnIngresar.gridy = 6;
+		gbcBtnIngresar.gridwidth = 2;
+		gbcBtnIngresar.fill = GridBagConstraints.HORIZONTAL;
+		gbcBtnIngresar.insets = new Insets(10, 30, 30, 30);
+		panel.add(btnIngresar, gbcBtnIngresar);
 
-		
+		// --- Listeners ---
 		txtUsuario.addActionListener(e -> txtPassword.requestFocusInWindow());
-
-		// 2. Al presionar "Enter" en la contraseña, "presiona" el botón de ingresar
 		txtPassword.addActionListener(e -> btnIngresar.doClick());
-
-	
 	}
 
 	public String getUsuario() {
