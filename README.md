@@ -52,5 +52,3 @@ Cada venta genera un recibo con:
 - *H2 Database* (base de datos embebida, archivos .mv.db)
 - *Apache POI* (exportación a Excel)
 - *Eclipse IDE* (entorno de desarrollo)
-
-## Estructura del proyecto
