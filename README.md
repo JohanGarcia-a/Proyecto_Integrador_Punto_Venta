@@ -1,10 +1,10 @@
-# 🛒 Proyecto Integrador: Sistema de Punto de Venta (POS)
+# **Proyecto Integrador: Sistema de Punto de Venta (POS)
 
 Sistema de gestión comercial de escritorio desarrollado en **Java (Swing)** con base de datos **SQL Server**. Diseñado para optimizar el control de ventas, inventario, compras y flujo de efectivo en pequeños y medianos comercios.
 
 ---
 
-## Características Principales
+## **Características Principales
 
 ###  Módulo de Ventas
 * **Procesamiento Rápido:** Búsqueda de productos por código, nombre o ID.
