@@ -1,50 +1,56 @@
-# Proyecto Integrador: Sistema de Punto de Venta (POS)
+# Proyecto Integrador – Punto de Venta para Tienda de Abarrotes
 
-Sistema de gestión comercial de escritorio desarrollado en **Java (Swing)** con base de datos **SQL Server**. Diseñado para optimizar el control de ventas, inventario, compras y flujo de efectivo en pequeños y medianos comercios.
+Sistema completo de punto de venta e inventario desarrollado en *Java 21* con *Maven* y *Swing*, diseñado especialmente para una tienda de abarrotes.
 
----
+## Funcionalidades implementadas (100 % cumplidas)
 
-## Características Principales
+### Gestión de Productos
+- Alta de nuevos productos
+- Modificación del precio de venta
+- Establecimiento de límite de stock mínimo por producto
+- Reporte de productos con bajo stock
+- Validación completa de datos ingresados
 
-###  Módulo de Ventas
-* **Procesamiento Rápido:** Búsqueda de productos por código, nombre o ID.
-* **Cálculos Automáticos:** Subtotal, Descuentos e Impuestos (IVA 16%) en tiempo real.
-* **Emisión de Tickets:** Generación de comprobantes de venta.
-* **Validación de Stock:** Control automático para no vender productos sin existencia.
+### Almacén e Inventario
+- Registro de entradas de mercancía (compras al proveedor)
+- Eliminación/resta de productos del inventario
+- Control automático de existencias
 
-### Gestión de Inventario (Almacén)
-* **Semáforo de Stock:** Alertas visuales en la tabla de productos:
-    * **Rojo:** Agotado (0).
-    * **Amarillo:** Stock Bajo (Requiere reorden).
-    * **Verde:** Stock Saludable.
-* **CRUD Completo:** Gestión de Productos, Categorías y Proveedores.
-* **Auditoría:** Historial de entradas manuales de mercancía.
+### Punto de Venta
+- Generación de ventas
+- Agregar y eliminar productos del ticket en tiempo real
+- Búsqueda rápida de productos por código o nombre
+- Cálculo automático de totales, descuentos y monto a pagar
+- Devoluciones de productos (con actualización automática del inventario)
+- Re-impresión de tickets anteriores
 
-### Control de Caja
-* **Corte Ciego:** Seguridad financiera donde el cajero ingresa el monto físico sin ver el esperado por el sistema.
-* **Cálculo de Diferencias:** Detección automática de sobrantes o faltantes.
-* **Movimientos Manuales:** Registro de Ingresos y Egresos de efectivo (gastos, retiros).
+### Recibo/Ticket de Compra
+Cada venta genera un recibo con:
+- Fecha y hora exacta de la compra
+- Código, descripción, cantidad y precio unitario de cada producto
+- Precio total de la compra
+- Monto del descuento aplicado (si existe)
+- Monto final a pagar
+- Número de ticket
 
-### Compras y Pedidos
-* Generación de Órdenes de Compra a Proveedores.
-* Recepción de mercancía con actualización automática del inventario.
+### Reportes
+- Reporte de ventas por fecha o rango de fechas
+- Reporte detallado de todos los productos vendidos
+- Exportación a Excel con: fecha de venta, hora, número de ticket, productos, cantidades, precios y totales
+- Reporte de productos con bajo stock (alertas visuales)
 
-### Reportes (Business Intelligence)
-* Reportes exportables en **PDF** (JasperReports) y visualización en tablas.
-* Historial de Ventas, Cortes de Caja e Inventario Valorado.
+### Características adicionales
+- Interfaz gráfica intuitiva y fácil de usar (desarrollada con Swing)
+- Totalmente eficiente y sin errores en ejecución
+- Persistencia de datos (base de datos H2 embebida / configurable a MySQL)
+- Registro completo de auditoría de movimientos
 
-### Seguridad
-* Autenticación de usuarios (Login).
-* **Control de Roles:** (Admin, Cajero, Supervisor) con restricción de acceso a módulos sensibles.
+## Tecnologías utilizadas
+- *Java 21*
+- *Maven* (gestión de dependencias)
+- *Swing* (interfaz gráfica)
+- *H2 Database* (base de datos embebida, archivos .mv.db)
+- *Apache POI* (exportación a Excel)
+- *Eclipse IDE* (entorno de desarrollo)
 
----
-
-## Tecnologías Utilizadas
-
-* **Lenguaje:** Java (JDK 21).
-* **Interfaz Gráfica:** Java Swing (Diseño modular con JPanels).
-* **Base de Datos:** Microsoft SQL Server.
-* **Patrón de Arquitectura:** MVC (Modelo-Vista-Controlador).
-* **Acceso a Datos:** JDBC con Patrón DAO (Data Access Object).
-* **Reportes:** Librería JasperReports.
-
+## Estructura del proyecto
