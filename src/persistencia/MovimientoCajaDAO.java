@@ -12,8 +12,23 @@ import conexion.Conexion;
 import modelo.MovimientoCaja;
 import modelogenerico.BaseDAO;
 
+/**
+ * Clase de Acceso a Datos (DAO) para la entidad {@link MovimientoCaja}.
+ * <p>
+ * Gestiona las operaciones CRUD y consultas de agregación sobre la tabla
+ * <b>TablaMovimientosCaja</b>. Permite registrar ingresos y egresos de efectivo
+ * que no provienen de ventas (ej. "Pago de proveedores", "Ingreso de cambio").
+ * </p>
+ * * @version 1.1
+ */
 public class MovimientoCajaDAO implements BaseDAO<MovimientoCaja> {
 
+	/**
+	 * Registra un nuevo movimiento financiero en el corte de caja actual. * @param
+	 * movimiento Objeto con los detalles (Monto, Tipo, Descripción, Usuario).
+	 * 
+	 * @return {@code true} si se insertó correctamente y se generó un ID.
+	 */
 	@Override
 	public boolean agregar(MovimientoCaja movimiento) {
 		String sql = "INSERT INTO TablaMovimientosCaja(CorteID, UsuarioID, Fecha, TipoMovimiento, Monto, Descripcion) "
@@ -44,7 +59,17 @@ public class MovimientoCajaDAO implements BaseDAO<MovimientoCaja> {
 		return exito;
 	}
 
-	// --- MÉTODO CLAVE PARA LA VISTA DE HOY ---
+	/**
+	 * Recupera todos los movimientos asociados a un corte de caja específico.
+	 * <p>
+	 * Utiliza un {@code INNER JOIN} con la tabla de empleados para mostrar el
+	 * nombre de quién registró cada movimiento. Es fundamental para la auditoría
+	 * del turno.
+	 * </p>
+	 * * @param corteID Identificador del turno/corte.
+	 * 
+	 * @return Lista de movimientos ordenados cronológicamente descendente.
+	 */
 	public List<MovimientoCaja> obtenerMovimientosPorCorte(int corteID) {
 		List<MovimientoCaja> lista = new ArrayList<>();
 		// Hacemos JOIN con empleados para saber quién registró el movimiento
@@ -71,8 +96,18 @@ public class MovimientoCajaDAO implements BaseDAO<MovimientoCaja> {
 		return lista;
 	}
 
-	// --- MÉTODO CLAVE PARA EL CIERRE DE CAJA ---
-	// Nos dice cuánto dinero extra entró o salió en este turno
+	/**
+	 * Calcula la suma total de dinero por tipo de movimiento en un corte
+	 * específico.
+	 * <p>
+	 * Esencial para el algoritmo de <b>Cierre de Caja</b>. Permite saber cuánto se
+	 * debe sumar (Ingresos) o restar (Egresos) al "Monto Final del Sistema".
+	 * </p>
+	 * * @param corteID ID del corte activo.
+	 * 
+	 * @param tipoMovimiento "Ingreso" o "Egreso".
+	 * @return Suma total de los montos registrados.
+	 */
 	public double obtenerTotalPorTipo(int corteID, String tipoMovimiento) {
 		double total = 0.0;
 		String sql = "SELECT SUM(Monto) FROM TablaMovimientosCaja WHERE CorteID = ? AND TipoMovimiento = ?";

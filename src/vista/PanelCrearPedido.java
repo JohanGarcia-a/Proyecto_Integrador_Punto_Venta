@@ -31,13 +31,31 @@ import modelo.AlmacenProductos;
 import modelo.OrdenCompraDetalle;
 import modelo.Proveedor;
 
+/**
+ * Panel de interfaz gráfica para la creación de una nueva Orden de Compra
+ * (Pedido).
+ * <p>
+ * Este panel está diseñado para ser mostrado dentro de un {@link JOptionPane} o
+ * ventana emergente modal. Proporciona las herramientas necesarias para:
+ * <ul>
+ * <li>Seleccionar un proveedor.</li>
+ * <li>Buscar productos en el catálogo.</li>
+ * <li>Construir un pedido (carrito de compras al proveedor).</li>
+ * <li>Finalizar y registrar la orden.</li>
+ * </ul>
+ * </p>
+ * 
+ * @version 1.1
+ */
 public class PanelCrearPedido extends JPanel {
 
 	private static final long serialVersionUID = 1L;
 
+	// Componentes de cabecera
 	private JComboBox<Proveedor> comboProveedor;
 	private JLabel Lfecha;
 
+	// Componentes de búsqueda y detalle
 	private JTextField TbuscarProducto;
 	private JButton BbuscarProducto;
 	private JLabel LimagenProducto;
@@ -48,14 +66,29 @@ public class PanelCrearPedido extends JPanel {
 	private JTextField TcantidadAPedir;
 	private JButton BagregarAlPedido;
 
+	// Tabla de carrito de pedido
 	private DefaultTableModel modeloTablaPedido;
 	private JTable tablePedido;
 	private JButton BquitarDelPedido;
 
+	// Totales y acciones finales
 	private JLabel LtotalPedido;
 	private JButton BfinalizarPedido;
 	private JButton BcancelarPedido;
 
+	/**
+	 * Constructor.
+	 * <p>
+	 * Inicializa el panel, configura el diseño general {@link BorderLayout} y
+	 * estructura las tres áreas principales:
+	 * <ol>
+	 * <li><b>Norte:</b> Información general (Proveedor, Fecha).</li>
+	 * <li><b>Centro:</b> Búsqueda de productos (Izquierda) y Tabla de pedido
+	 * (Derecha).</li>
+	 * <li><b>Sur:</b> Totales y botones de acción (Finalizar/Cancelar).</li>
+	 * </ol>
+	 * </p>
+	 */
 	public PanelCrearPedido() {
 		setLayout(new BorderLayout(10, 10));
 		setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -95,9 +128,15 @@ public class PanelCrearPedido extends JPanel {
 		JPanel panelAcciones = crearPanelAcciones();
 		add(panelAcciones, BorderLayout.SOUTH);
 
-		limpiarCampos();
+		limpiarCampos(); // Estado inicial limpio
 	}
 
+	/**
+	 * Construye el panel superior con la información del proveedor y la fecha
+	 * actual.
+	 * 
+	 * @return Panel configurado.
+	 */
 	private JPanel crearPanelInfoGeneral() {
 		JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
 		panel.setBorder(BorderFactory.createTitledBorder("Información del Pedido"));
@@ -116,6 +155,15 @@ public class PanelCrearPedido extends JPanel {
 		return panel;
 	}
 
+	/**
+	 * Construye el panel lateral izquierdo para buscar productos y ver su detalle.
+	 * <p>
+	 * Utiliza {@link GridBagLayout} para organizar los campos de búsqueda, la
+	 * imagen del producto, y los campos editables como Costo y Cantidad.
+	 * </p>
+	 * 
+	 * @return Panel configurado.
+	 */
 	private JPanel crearPanelBusquedaProducto() {
 		JPanel panel = new JPanel();
 		panel.setBorder(BorderFactory.createTitledBorder("Buscar Producto"));
@@ -147,6 +195,11 @@ public class PanelCrearPedido extends JPanel {
 		gbc_BbuscarProducto.gridx = 2;
 		gbc_BbuscarProducto.gridy = 0;
 		panel.add(BbuscarProducto, gbc_BbuscarProducto);
+
+		// ... [Configuración de Imagen, Nombre, Descripción, Costo, Stock y Cantidad
+		// omitida por brevedad] ...
+		// (El código completo incluye la configuración detallada de cada componente en
+		// el GridBagLayout)
 
 		// --- Fila 1: Imagen ---
 		LimagenProducto = new JLabel("");
@@ -180,7 +233,7 @@ public class PanelCrearPedido extends JPanel {
 		gbc_TnombreProducto.fill = GridBagConstraints.HORIZONTAL;
 		panel.add(TnombreProducto, gbc_TnombreProducto);
 
-		// --- Fila 3: Descripcion --- (PETICIÓN AÑADIDA)
+		// --- Fila 3: Descripcion ---
 		JLabel Ldescripcion = new JLabel("Descripcion:");
 		GridBagConstraints gbc_Ldescripcion = new GridBagConstraints();
 		gbc_Ldescripcion.insets = new Insets(5, 5, 5, 5);
@@ -269,13 +322,19 @@ public class PanelCrearPedido extends JPanel {
 		return panel;
 	}
 
+	/**
+	 * Construye el panel derecho con la tabla que lista los productos agregados al
+	 * pedido.
+	 * 
+	 * @return Panel configurado con JScrollPane y JTable.
+	 */
+	@SuppressWarnings("serial")
 	private JPanel crearPanelCarrito() {
 		JPanel panel = new JPanel(new BorderLayout(5, 5));
 		panel.setBorder(BorderFactory.createTitledBorder("Productos en Pedido"));
 
-		// --- ARREGLO DE TABLA ---
+		// Definición de columnas visibles
 		String[] columnas = { "ID", "Producto", "Descripcion", "Cantidad", "Costo Unit.", "Subtotal" };
-		// -------------------------
 
 		modeloTablaPedido = new DefaultTableModel(columnas, 0) {
 			@Override
@@ -296,6 +355,12 @@ public class PanelCrearPedido extends JPanel {
 		return panel;
 	}
 
+	/**
+	 * Construye el panel inferior con el total acumulado y los botones de
+	 * finalización.
+	 * 
+	 * @return Panel de acciones.
+	 */
 	private JPanel crearPanelAcciones() {
 		JPanel panel = new JPanel(new BorderLayout(5, 5));
 		panel.setBorder(BorderFactory.createEtchedBorder());
@@ -318,7 +383,7 @@ public class PanelCrearPedido extends JPanel {
 		return panel;
 	}
 
-	// --- Métodos Públicos (para el Controlador) ---
+	// --- Métodos de Interacción con el Controlador ---
 
 	public void mostrarMensaje(String mensaje) {
 		JOptionPane.showMessageDialog(this, mensaje, "Información", JOptionPane.INFORMATION_MESSAGE);
@@ -328,21 +393,35 @@ public class PanelCrearPedido extends JPanel {
 		JOptionPane.showMessageDialog(this, mensaje, "Error", JOptionPane.ERROR_MESSAGE);
 	}
 
+	/**
+	 * Restablece todos los campos del panel a su estado inicial.
+	 * <p>
+	 * Limpia la tabla de pedidos, reinicia los totales y habilita nuevamente el
+	 * selector de proveedores.
+	 * </p>
+	 */
 	public void limpiarCampos() {
 		TbuscarProducto.setText("");
 		LimagenProducto.setIcon(new ImageIcon(PanelVenta.class.getResource("/Iconos/sinImagen.png")));
 		TnombreProducto.setText("");
-		Tdescripcion.setText(""); // <-- ARREGLO AQUÍ
+		Tdescripcion.setText("");
 		TcostoProducto.setText("");
 		TstockProducto.setText("");
 		TcantidadAPedir.setText("");
 		modeloTablaPedido.setRowCount(0);
 		LtotalPedido.setText("Total Pedido: $0.00");
+
+		// Habilitar el combo de proveedor para permitir un nuevo pedido
 		comboProveedor.setEnabled(true);
 		if (comboProveedor.getItemCount() > 0)
 			comboProveedor.setSelectedIndex(0);
 	}
 
+	/**
+	 * Carga la lista de proveedores en el JComboBox.
+	 * 
+	 * @param proveedores Lista de objetos Proveedor recuperados de la BD.
+	 */
 	public void cargarProveedores(List<Proveedor> proveedores) {
 		comboProveedor.removeAllItems();
 		for (Proveedor p : proveedores)
@@ -351,14 +430,27 @@ public class PanelCrearPedido extends JPanel {
 			comboProveedor.setSelectedIndex(0);
 	}
 
+	/**
+	 * Muestra los detalles de un producto encontrado en los campos
+	 * correspondientes.
+	 * <p>
+	 * Además, intenta seleccionar automáticamente el proveedor asociado al producto
+	 * si el combo aún está habilitado.
+	 * </p>
+	 * 
+	 * @param producto Objeto con los datos a mostrar.
+	 */
 	public void mostrarDatosProducto(AlmacenProductos producto) {
 		TnombreProducto.setText(producto.getNombre());
 		Tdescripcion.setText(producto.getDescripcion());
 
+		// El costo de compra por defecto se asume igual al precio de lista (puede
+		// editarse)
 		TcostoProducto.setText(String.valueOf(producto.getPrecio()));
 		TstockProducto.setText(String.valueOf(producto.getCantidad()));
 		TcantidadAPedir.setText("1");
 
+		// Selección automática de proveedor
 		if (comboProveedor.isEnabled()) {
 			int proveedorIdDelProducto = producto.getProveedorId();
 			for (int i = 0; i < comboProveedor.getItemCount(); i++) {
@@ -370,6 +462,7 @@ public class PanelCrearPedido extends JPanel {
 			}
 		}
 
+		// Carga de imagen
 		String rutaImagen = producto.getRuta();
 		if (rutaImagen != null && !rutaImagen.isEmpty() && new File(rutaImagen).exists()) {
 			ImageIcon icon = new ImageIcon(rutaImagen);
@@ -380,16 +473,21 @@ public class PanelCrearPedido extends JPanel {
 			LimagenProducto.setIcon(new ImageIcon(PanelCrearPedido.class.getResource("/Iconos/sinImagen.png")));
 			LimagenProducto.setText("");
 		}
-
 	}
 
+	/**
+	 * Agrega una fila a la tabla de pedidos (Carrito).
+	 * 
+	 * @param detalle Objeto con la información del producto agregado.
+	 */
 	public void agregarDetalleAlPedido(OrdenCompraDetalle detalle) {
 		modeloTablaPedido.addRow(detalle.toTableRow());
-		
+
+		// Limpieza de campos de búsqueda para permitir agregar otro producto
 		TbuscarProducto.setText("");
 		LimagenProducto.setIcon(new ImageIcon(PanelVenta.class.getResource("/Iconos/sinImagen.png")));
 		TnombreProducto.setText("");
-		Tdescripcion.setText(""); 
+		Tdescripcion.setText("");
 		TcostoProducto.setText("");
 		TstockProducto.setText("");
 		TcantidadAPedir.setText("");

@@ -13,46 +13,84 @@ import conexion.Conexion;
 import modelo.Venta;
 import modelo.VentaDetalle;
 
+/**
+ * Clase de Acceso a Datos (DAO) para la entidad {@link Venta}.
+ * <p>
+ * Gestiona el ciclo de vida transaccional de las ventas. Esta clase es crítica
+ * para la integridad del negocio, ya que coordina la inserción de la cabecera
+ * de venta, sus detalles y la actualización (resta) del stock en una sola
+ * operación atómica.
+ * </p>
+ * * @version 1.2
+ */
 public class VentaDAO {
 
+	/**
+	 * Registra una venta completa en la base de datos de manera transaccional.
+	 * <p>
+	 * <b>Flujo de la Transacción (ACID):</b>
+	 * <ol>
+	 * <li>Desactiva el auto-commit.</li>
+	 * <li>Inserta la cabecera en {@code TablaVentas} (incluyendo impuestos y corte
+	 * ID).</li>
+	 * <li>Recupera el ID generado (Folio).</li>
+	 * <li>Para cada detalle en la lista:
+	 * <ul>
+	 * <li>Inserta el registro en {@code TablaVentaDetalle}.</li>
+	 * <li>Ejecuta un {@code UPDATE} en {@code TablaAlmacen_Productos} restando la
+	 * cantidad vendida.</li>
+	 * </ul>
+	 * </li>
+	 * <li>Si todo es correcto, hace {@code commit()}. Si falla algo, hace
+	 * {@code rollback()}.</li>
+	 * </ol>
+	 * </p>
+	 * * @param venta Objeto {@link Venta} con todos los datos y la lista de
+	 * detalles cargada.
+	 * 
+	 * @return {@code true} si la venta se procesó exitosamente.
+	 */
 	public boolean agregar(Venta venta) {
-		// --- CAMBIO 1: El SQL ahora incluye todas las columnas nuevas ---
+		// SQL incluyendo todas las columnas financieras y de auditoría
 		String sqlVenta = "INSERT INTO TablaVentas(ClienteID, EmpleadoID, FechaVenta, Total, MetodoPago, Subtotal, Descuento, Impuestos, CorteID) "
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 		String sqlDetalle = "INSERT INTO TablaVentaDetalle(VentaID, ProductoID, Cantidad, PrecioUnitario, Subtotal) VALUES (?, ?, ?, ?, ?)";
+		// SQL para descontar inventario automáticamente
 		String sqlUpdateStock = "UPDATE TablaAlmacen_Productos SET Cantidad = Cantidad - ? WHERE Pid = ?";
+
 		Connection con = null;
 		boolean exito = false;
 
 		try {
 			con = Conexion.getConexion();
-			con.setAutoCommit(false); // Inicia la transacción
+			con.setAutoCommit(false); // Inicia la transacción manual
 
-			// --- CAMBIO 2: Se actualiza el PreparedStatement ---
+			// 1. Insertar Cabecera
 			try (PreparedStatement psVenta = con.prepareStatement(sqlVenta, Statement.RETURN_GENERATED_KEYS)) {
 				psVenta.setInt(1, venta.getClienteId());
 				psVenta.setInt(2, venta.getEmpleadoId());
 				psVenta.setTimestamp(3, new java.sql.Timestamp(venta.getFecha().getTime()));
 
-				// Estos son los nuevos campos que añadimos:
-				psVenta.setDouble(4, venta.getTotal()); // El Total FINAL
+				// Campos financieros
+				psVenta.setDouble(4, venta.getTotal()); // Total FINAL a pagar
 				psVenta.setString(5, venta.getMetodoPago()); // "Efectivo" o "Tarjeta"
-				psVenta.setDouble(6, venta.getSubtotal()); // La suma de productos
-				psVenta.setDouble(7, venta.getDescuento()); // El monto descontado
-				psVenta.setDouble(8, venta.getImpuestos()); // El monto de IVA
-				psVenta.setInt(9, venta.getCorteID()); // El ID del corte de caja
+				psVenta.setDouble(6, venta.getSubtotal()); // Suma bruta de productos
+				psVenta.setDouble(7, venta.getDescuento()); // Descuento aplicado
+				psVenta.setDouble(8, venta.getImpuestos()); // IVA calculado
+				psVenta.setInt(9, venta.getCorteID()); // Vinculación con el turno de caja
 
 				psVenta.executeUpdate();
-				// --- FIN DEL CAMBIO 2 ---
 
+				// 2. Recuperar ID generado (Folio del Ticket)
 				try (ResultSet generatedKeys = psVenta.getGeneratedKeys()) {
 					if (generatedKeys.next()) {
 						int ventaIdGenerada = generatedKeys.getInt(1);
 						venta.setid(ventaIdGenerada);
 
-						// Bucle para detalles y stock (esto no cambia)
+						// 3. Procesar Detalles y Stock
 						for (VentaDetalle detalle : venta.getDetalles()) {
+							// 3.1 Guardar detalle
 							try (PreparedStatement psDetalle = con.prepareStatement(sqlDetalle)) {
 								psDetalle.setInt(1, ventaIdGenerada);
 								psDetalle.setInt(2, detalle.getProductoId());
@@ -61,6 +99,7 @@ public class VentaDAO {
 								psDetalle.setDouble(5, detalle.getSubtotal());
 								psDetalle.executeUpdate();
 							}
+							// 3.2 Actualizar inventario (Restar)
 							try (PreparedStatement psUpdate = con.prepareStatement(sqlUpdateStock)) {
 								psUpdate.setInt(1, detalle.getCantidad());
 								psUpdate.setInt(2, detalle.getProductoId());
@@ -70,13 +109,13 @@ public class VentaDAO {
 					}
 				}
 			}
-			con.commit(); // Finaliza la transacción
+			con.commit(); // Confirmar cambios permanentemente
 			exito = true;
 		} catch (SQLException e) {
 			System.err.println("Error al registrar la venta, haciendo rollback: " + e.getMessage());
 			try {
 				if (con != null) {
-					con.rollback();
+					con.rollback(); // Revertir cambios en caso de error
 				}
 			} catch (SQLException ex) {
 				System.err.println("Error al hacer rollback: " + ex.getMessage());
@@ -84,7 +123,7 @@ public class VentaDAO {
 		} finally {
 			try {
 				if (con != null) {
-					con.setAutoCommit(true);
+					con.setAutoCommit(true); // Restaurar comportamiento por defecto
 					con.close();
 				}
 			} catch (SQLException e) {
@@ -94,6 +133,13 @@ public class VentaDAO {
 		return exito;
 	}
 
+	/**
+	 * Recupera el historial completo de ventas.
+	 * <p>
+	 * Realiza JOINs con Clientes y Empleados para mostrar nombres en lugar de IDs.
+	 * </p>
+	 * * @return Lista de ventas ordenadas por ID descendente.
+	 */
 	public List<Venta> obtenerTodasLasVentas() {
 		List<Venta> ventas = new ArrayList<>();
 
@@ -121,6 +167,11 @@ public class VentaDAO {
 		return ventas;
 	}
 
+	/**
+	 * Busca una venta específica por su folio. * @param id Número de ticket/venta.
+	 * 
+	 * @return Objeto {@link Venta} (Cabecera) o {@code null}.
+	 */
 	public Venta buscarVentaPorID(int id) {
 		Venta venta = null;
 
@@ -148,6 +199,16 @@ public class VentaDAO {
 		return venta;
 	}
 
+	/**
+	 * Filtra las ventas realizadas en un rango de fechas.
+	 * <p>
+	 * Utilizado para generar reportes mensuales o diarios.
+	 * </p>
+	 * * @param fechaInicio Inicio del rango.
+	 * 
+	 * @param fechaFin Fin del rango.
+	 * @return Lista de ventas dentro del periodo.
+	 */
 	public List<Venta> obtenerVentasPorFecha(Date fechaInicio, Date fechaFin) {
 		List<Venta> ventas = new ArrayList<>();
 
@@ -178,6 +239,18 @@ public class VentaDAO {
 		return ventas;
 	}
 
+	/**
+	 * Obtiene un resumen financiero agrupado por método de pago para un corte de
+	 * caja específico.
+	 * <p>
+	 * Esencial para el Cierre de Caja: permite saber cuánto se vendió en "Efectivo"
+	 * (para comparar con el dinero físico) y cuánto en "Tarjeta" (dinero digital).
+	 * </p>
+	 * * @param corteID ID del turno a consultar.
+	 * 
+	 * @return Lista de objetos Venta simplificados donde {@code MetodoPago} y
+	 *         {@code Total} contienen el resumen.
+	 */
 	public List<Venta> obtenerTotalesPorMetodoPago(int corteID) {
 		List<Venta> resumen = new ArrayList<>();
 
@@ -201,26 +274,34 @@ public class VentaDAO {
 		}
 		return resumen;
 	}
-	
+
+	/**
+	 * Procesa la devolución/cancelación de una venta.
+	 * <p>
+	 * <b>Lógica Inversa:</b>
+	 * <ol>
+	 * <li>Consulta los productos vendidos en esa transacción.</li>
+	 * <li>Suma las cantidades de vuelta al inventario (Restock).</li>
+	 * <li>Anula el monto total de la venta (lo pone en 0) para que no afecte el
+	 * cierre de caja, pero mantiene el registro histórico.</li>
+	 * </ol>
+	 * </p>
+	 * * @param ventaId ID de la venta a cancelar.
+	 * 
+	 * @return {@code true} si la devolución se procesó correctamente.
+	 */
 	public boolean realizarDevolucion(int ventaId) {
 		Connection con = null;
 		boolean exito = false;
 
-		// SQL 1: Obtener qué productos se vendieron y cuántos
 		String sqlDetalles = "SELECT ProductoID, Cantidad FROM TablaVentaDetalle WHERE VentaID = ?";
-
-		// SQL 2: Regresar esos productos al inventario
 		String sqlRestock = "UPDATE TablaAlmacen_Productos SET Cantidad = Cantidad + ? WHERE Pid = ?";
-
-		// SQL 3: Anular la venta visualmente (Total a 0 y marcar cliente)
-		// Nota: Hacemos esto para no borrar el registro histórico, pero anular su valor
-		// financiero.
+		// Anulamos el valor financiero para que no cuente en el corte
 		String sqlAnular = "UPDATE TablaVentas SET Total = 0, ClienteID = NULL WHERE VentaID = ?";
-		// Opcional: Si tienes una columna 'Status', úsala. Si no, este truco funciona.
 
 		try {
 			con = Conexion.getConexion();
-			con.setAutoCommit(false); // Iniciar transacción segura
+			con.setAutoCommit(false); // Transacción segura
 
 			// Paso 1: Recuperar productos
 			try (PreparedStatement psDet = con.prepareStatement(sqlDetalles)) {

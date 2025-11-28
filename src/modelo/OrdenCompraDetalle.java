@@ -1,47 +1,119 @@
 package modelo;
 
+/**
+ * Entidad que representa un renglón o ítem individual dentro de una Orden de
+ * Compra.
+ * <p>
+ * Mapea la tabla <b>TablaOrdenCompraDetalle</b>. Esta clase contiene la
+ * información específica de qué producto se pidió, cuántas unidades y a qué
+ * costo unitario.
+ * </p>
+ * <p>
+ * Se utiliza tanto para construir el pedido en memoria ("Carrito de compra al
+ * proveedor") como para recuperar el historial de pedidos pasados.
+ * </p>
+ * * @version 1.1
+ */
 public class OrdenCompraDetalle {
 
-	private int id; // DetalleID
-	private int ordenCompraId; // OrdenID
-	private int productoId; // ProductoID
+	/** Identificador único del detalle (PK). */
+	private int id;
+
+	/** Identificador de la Orden de Compra a la que pertenece (FK). */
+	private int ordenCompraId;
+
+	/** Identificador del producto solicitado (FK). */
+	private int productoId;
+
+	/** Número de unidades solicitadas al proveedor. */
 	private int cantidadPedida;
+
+	/** Costo por unidad acordado con el proveedor (distinto al precio de venta). */
 	private double costoUnitario;
 
-	// Campos extra para JOINs
-	private String nombreProducto;
-	private String descripcion; // <-- CAMBIO 1: AÑADIR CAMPO
+	// --- Campos informativos (No persistidos directamente en la tabla de detalle,
+	// sino obtenidos por relación) ---
 
-	// Constructor para cuando LEEMOS de la BD
-	// (Añadimos descripcion al final)
+	/** Nombre comercial del producto. */
+	private String nombreProducto;
+
+	/**
+	 * * Descripción del producto.
+	 * <p>
+	 * Añadido para facilitar la identificación visual del ítem en la tabla de
+	 * pedidos.
+	 * </p>
+	 */
+	private String descripcion;
+
+	/**
+	 * Constructor para <b>LEER</b> desde la Base de Datos.
+	 * <p>
+	 * Utilizado por el DAO cuando se consulta el historial. Incluye todos los IDs y
+	 * los datos informativos (nombre y descripción) obtenidos mediante JOINs con la
+	 * tabla de Productos.
+	 * </p>
+	 * * @param id ID del detalle.
+	 * 
+	 * @param ordenCompraId  ID de la orden padre.
+	 * @param productoId     ID del producto.
+	 * @param cantidadPedida Cantidad.
+	 * @param costoUnitario  Costo.
+	 * @param nombreProducto Nombre del producto.
+	 * @param descripcion    Descripción del producto.
+	 */
 	public OrdenCompraDetalle(int id, int ordenCompraId, int productoId, int cantidadPedida, double costoUnitario,
-			String nombreProducto, String descripcion) { // <-- CAMBIO 2
+			String nombreProducto, String descripcion) {
 		this.id = id;
 		this.ordenCompraId = ordenCompraId;
 		this.productoId = productoId;
 		this.cantidadPedida = cantidadPedida;
 		this.costoUnitario = costoUnitario;
 		this.nombreProducto = nombreProducto;
-		this.descripcion = descripcion; // <-- CAMBIO 3
+		this.descripcion = descripcion;
 	}
 
-	// Constructor para cuando CREAMOS un detalle nuevo (en el "carrito")
-	// (Añadimos descripcion)
+	/**
+	 * Constructor para <b>CREAR</b> un nuevo detalle (En memoria/Carrito).
+	 * <p>
+	 * Se utiliza desde la interfaz {@code PanelCrearPedido}. Al ser un objeto nuevo
+	 * en memoria que aún no se guarda, los IDs de detalle y orden se inicializan en
+	 * 0.
+	 * </p>
+	 * * @param productoId ID del producto seleccionado.
+	 * 
+	 * @param nombreProducto Nombre para mostrar.
+	 * @param descripcion    Descripción para mostrar.
+	 * @param cantidadPedida Cantidad a pedir.
+	 * @param costoUnitario  Costo ingresado.
+	 */
 	public OrdenCompraDetalle(int productoId, String nombreProducto, String descripcion, int cantidadPedida,
-			double costoUnitario) { // <-- CAMBIO 4
+			double costoUnitario) {
 		this.id = 0;
 		this.ordenCompraId = 0;
 		this.productoId = productoId;
 		this.nombreProducto = nombreProducto;
-		this.descripcion = descripcion; // <-- CAMBIO 5
+		this.descripcion = descripcion;
 		this.cantidadPedida = cantidadPedida;
 		this.costoUnitario = costoUnitario;
 	}
 
-	// Este toTableRow() es para el "carrito" del panel "Crear Pedido"
+	/**
+	 * Genera un arreglo de objetos para visualizar el detalle en la tabla
+	 * (Carrito).
+	 * <p>
+	 * Incluye el cálculo automático del <b>Subtotal</b> (Cantidad * Costo) para
+	 * mostrarlo en la interfaz gráfica.
+	 * </p>
+	 * * @return Arreglo con: [ID Producto, Nombre, Descripción, Cantidad, Costo
+	 * Unit., Subtotal].
+	 */
 	public Object[] toTableRow() {
-		return new Object[] { this.productoId, this.nombreProducto, this.descripcion, // <-- CAMBIO 6: AÑADIR A LA FILA
-				this.cantidadPedida, this.costoUnitario, (this.cantidadPedida * this.costoUnitario) // Subtotal
+		return new Object[] { this.productoId, this.nombreProducto, this.descripcion, // Se incluye la descripción en la
+																						// visualización
+				this.cantidadPedida, this.costoUnitario, (this.cantidadPedida * this.costoUnitario) // Cálculo del
+																									// Subtotal de la
+																									// línea
 		};
 	}
 
@@ -95,7 +167,6 @@ public class OrdenCompraDetalle {
 		this.nombreProducto = nombreProducto;
 	}
 
-	// --- AÑADIR GETTER Y SETTER PARA DESCRIPCION ---
 	public String getDescripcion() {
 		return descripcion;
 	}

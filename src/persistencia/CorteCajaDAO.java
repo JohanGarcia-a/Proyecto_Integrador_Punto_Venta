@@ -11,8 +11,27 @@ import java.util.List;
 import conexion.Conexion;
 import modelo.CorteCaja;
 
+/**
+ * Clase de Acceso a Datos (DAO) para la entidad {@link CorteCaja}.
+ * <p>
+ * Gestiona el ciclo de vida de los turnos de caja en la base de datos: Apertura
+ * (Insertar), Verificación de Estado (Consultar Abiertos) y Cierre
+ * (Actualizar).
+ * </p>
+ * * @version 1.1
+ */
 public class CorteCajaDAO {
 
+	/**
+	 * Registra la APERTURA de un nuevo turno de caja.
+	 * <p>
+	 * Inserta un registro con el monto inicial (fondo) y el estado "Abierto". La
+	 * fecha de cierre y los montos finales quedan nulos o en cero.
+	 * </p>
+	 * * @param corte Objeto {@link CorteCaja} con los datos de inicio.
+	 * 
+	 * @return El ID autogenerado del nuevo corte, o -1 si hubo error.
+	 */
 	public int agregar(CorteCaja corte) {
 		String sql = "INSERT INTO TablaCortesCaja (UsuarioID, FechaApertura, MontoInicial, Status) "
 				+ "VALUES (?, ?, ?, ?)";
@@ -41,12 +60,17 @@ public class CorteCajaDAO {
 	}
 
 	/**
-	 * Busca un corte de caja que esté 'Abierto' para un usuario específico en la
-	 * fecha actual.
+	 * Verifica si un usuario ya tiene una caja abierta para el día de hoy.
+	 * <p>
+	 * <b>Nota Técnica:</b> Utiliza la función de SQL Server
+	 * {@code CONVERT(DATE, ...)} para comparar solo la parte de la fecha
+	 * (año-mes-día), ignorando la hora exacta. Esto evita que un usuario abra
+	 * múltiples cajas el mismo día si no ha cerrado la anterior.
+	 * </p>
+	 * * @param usuarioID El ID del empleado logueado.
 	 * 
-	 * @param usuarioID El ID del empleado.
-	 * @return Un objeto CorteCaja si se encuentra, o null si no hay ninguno abierto
-	 *         hoy.
+	 * @return Objeto {@link CorteCaja} si existe uno abierto hoy, o {@code null} si
+	 *         no.
 	 */
 	public CorteCaja buscarCorteAbiertoHoy(int usuarioID) {
 		// SQL Server: CONVERT(DATE, ...) extrae solo la fecha (ignora la hora)
@@ -61,7 +85,7 @@ public class CorteCajaDAO {
 
 			try (ResultSet rs = ps.executeQuery()) {
 				if (rs.next()) {
-					// Si encontramos uno, lo construimos
+					// Si encontramos uno, lo construimos con todos sus datos
 					corte = new CorteCaja(rs.getInt("CorteID"), rs.getInt("UsuarioID"),
 							rs.getTimestamp("FechaApertura"), rs.getDouble("MontoInicial"),
 							rs.getTimestamp("FechaCierre"), rs.getDouble("MontoFinalSistema"),
@@ -75,11 +99,15 @@ public class CorteCajaDAO {
 	}
 
 	/**
-	 * Actualiza un corte de caja para marcarlo como 'Cerrado'. (Lo usaremos más
-	 * adelante en el módulo de Cierre de Caja).
+	 * Realiza el CIERRE administrativo de la caja.
+	 * <p>
+	 * Actualiza el registro existente estableciendo la fecha de cierre, los montos
+	 * finales calculados, la diferencia (sobrante/faltante) y cambia el estado a
+	 * "Cerrado".
+	 * </p>
+	 * * @param corte El objeto CorteCaja con todos los datos del cierre calculados.
 	 * 
-	 * @param corte El objeto CorteCaja con todos los datos del cierre.
-	 * @return true si se actualizó con éxito, false en caso contrario.
+	 * @return {@code true} si se actualizó con éxito.
 	 */
 	public boolean cerrarCorte(CorteCaja corte) {
 		String sql = "UPDATE TablaCortesCaja SET " + "FechaCierre = ?, " + "MontoFinalSistema = ?, "
@@ -101,7 +129,17 @@ public class CorteCajaDAO {
 		}
 	}
 
-	// --- MÉTODO NUEVO PARA REPORTES (AÑADIDO) ---
+	/**
+	 * Obtiene el historial completo de cortes de caja en un rango de fechas.
+	 * <p>
+	 * Utilizado para el módulo de Reportes. Ejecuta un {@code INNER JOIN} con la
+	 * tabla de empleados para mostrar quién fue el responsable de cada turno.
+	 * </p>
+	 * * @param fechaInicio Fecha inicial del rango.
+	 * 
+	 * @param fechaFin Fecha final del rango.
+	 * @return Lista de cortes enriquecida con nombres de usuarios.
+	 */
 	public List<CorteCaja> obtenerHistorialCortes(Date fechaInicio, Date fechaFin) {
 		List<CorteCaja> lista = new ArrayList<>();
 		// Hacemos JOIN con empleados para obtener el nombre (NombreE)
@@ -116,7 +154,7 @@ public class CorteCajaDAO {
 
 			try (ResultSet rs = ps.executeQuery()) {
 				while (rs.next()) {
-					// Usamos el NUEVO constructor que incluye nombreUsuario
+					// Usamos el constructor especial que incluye nombreUsuario para el reporte
 					lista.add(new CorteCaja(rs.getInt("CorteID"), rs.getString("NombreE"), // Nombre del empleado
 							rs.getTimestamp("FechaApertura"), rs.getTimestamp("FechaCierre"),
 							rs.getDouble("MontoInicial"), rs.getDouble("MontoFinalSistema"),

@@ -5,112 +5,174 @@ import java.util.Date;
 import java.util.List;
 import modelogenerico.Entidad;
 
-// Esta clase es la "Maestra", similar a Venta.java
+/**
+ * Entidad que representa la cabecera de un Pedido o Orden de Compra a un
+ * proveedor.
+ * <p>
+ * Mapea la tabla <b>TablaOrdenesCompra</b>. Funciona como la entidad "Maestra"
+ * en la relación Maestro-Detalle, conteniendo la información general
+ * (Proveedor, Fecha, Status) y una lista de {@link OrdenCompraDetalle} con los
+ * productos específicos.
+ * </p>
+ * <p>
+ * Gestiona el ciclo de vida del pedido: Creación ("Pendiente") -> Recepción
+ * ("Recibido").
+ * </p>
+ * * @version 1.0
+ */
 public class OrdenCompra implements Entidad {
 
-    private int id;
-    private int proveedorId;
-    private Date fecha;
-    private String status;
+	/** Identificador único de la orden de compra (PK). */
+	private int id;
 
-    // Campos extra para mostrar datos de JOINs (igual que en Venta)
-    private String nombreProveedor;
+	/** Identificador del proveedor al que se le hace el pedido (FK). */
+	private int proveedorId;
 
-    // Lista para guardar los detalles (igual que en Venta)
-    private List<OrdenCompraDetalle> detalles;
+	/** Fecha de creación del pedido. */
+	private Date fecha;
 
-    // Constructor para cuando creamos un pedido nuevo
-    public OrdenCompra() {
-        this.detalles = new ArrayList<>();
-        this.fecha = new Date();
-        this.status = "Pendiente";
-    }
+	/** Estado actual del pedido. Valores: "Pendiente", "Recibido", "Cancelado". */
+	private String status;
 
-    // Constructor para cuando leemos un pedido de la BD
-    public OrdenCompra(int id, int proveedorId, Date fecha, String status, String nombreProveedor) {
-        this.id = id;
-        this.proveedorId = proveedorId;
-        this.fecha = fecha;
-        this.status = status;
-        this.nombreProveedor = nombreProveedor;
-        this.detalles = new ArrayList<>(); // Los detalles se cargan por separado
-    }
+	/**
+	 * * Nombre del proveedor asociado.
+	 * <p>
+	 * Atributo no persistente en la tabla de órdenes, obtenido mediante JOIN para
+	 * mostrar en la interfaz.
+	 * </p>
+	 */
+	private String nombreProveedor;
 
-    // --- Métodos para manejar los detalles (igual que en Venta) ---
-    
-    public void agregarDetalle(OrdenCompraDetalle detalle) {
-        this.detalles.add(detalle);
-        detalle.setOrdenCompraId(this.id); // Asignamos el ID de esta orden al detalle
-    }
+	/** Lista que contiene los renglones (productos) de este pedido. */
+	private List<OrdenCompraDetalle> detalles;
 
-    public void quitarDetalle(int indice) {
-        if (indice >= 0 && indice < detalles.size()) {
-            detalles.remove(indice);
-        }
-    }
+	/**
+	 * Constructor para <b>CREAR</b> un nuevo pedido en memoria.
+	 * <p>
+	 * Inicializa la lista de detalles vacía, establece la fecha al momento actual y
+	 * fija el estado inicial como "Pendiente".
+	 * </p>
+	 */
+	public OrdenCompra() {
+		this.detalles = new ArrayList<>();
+		this.fecha = new Date();
+		this.status = "Pendiente";
+	}
 
-    public List<OrdenCompraDetalle> getDetalles() {
-        return detalles;
-    }
+	/**
+	 * Constructor para <b>LEER</b> un pedido existente desde la base de datos.
+	 * <p>
+	 * Se utiliza en {@code OrdenCompraDAO} para reconstruir el objeto cabecera.
+	 * <b>Nota:</b> La lista de detalles no se carga en este constructor, se debe
+	 * cargar por separado si es necesaria.
+	 * </p>
+	 * * @param id ID de la orden.
+	 * 
+	 * @param proveedorId     ID del proveedor.
+	 * @param fecha           Fecha de registro.
+	 * @param status          Estado actual.
+	 * @param nombreProveedor Nombre del proveedor (Dato enriquecido).
+	 */
+	public OrdenCompra(int id, int proveedorId, Date fecha, String status, String nombreProveedor) {
+		this.id = id;
+		this.proveedorId = proveedorId;
+		this.fecha = fecha;
+		this.status = status;
+		this.nombreProveedor = nombreProveedor;
+		this.detalles = new ArrayList<>(); // Los detalles se cargan por separado
+	}
 
-    public void setDetalles(List<OrdenCompraDetalle> detalles) {
-        this.detalles = detalles;
-    }
+	// --- Métodos para manejar los detalles (Relación Maestro-Detalle) ---
 
-    // --- Métodos de la interfaz Entidad ---
+	/**
+	 * Agrega un producto (detalle) a la lista de esta orden.
+	 * <p>
+	 * Vincula automáticamente el detalle con el ID de esta orden maestra (si ya
+	 * existe).
+	 * </p>
+	 * 
+	 * @param detalle Objeto {@link OrdenCompraDetalle} a agregar.
+	 */
+	public void agregarDetalle(OrdenCompraDetalle detalle) {
+		this.detalles.add(detalle);
+		detalle.setOrdenCompraId(this.id); // Asignamos el ID de esta orden al detalle
+	}
 
-    @Override
-    public int getid() {
-        return this.id;
-    }
+	/**
+	 * Elimina un detalle de la lista en memoria basado en su índice.
+	 * 
+	 * @param indice Posición en la lista (0 a N).
+	 */
+	public void quitarDetalle(int indice) {
+		if (indice >= 0 && indice < detalles.size()) {
+			detalles.remove(indice);
+		}
+	}
 
-    @Override
-    public void setid(int id) {
-        this.id = id;
-    }
+	public List<OrdenCompraDetalle> getDetalles() {
+		return detalles;
+	}
 
-    // Este toTableRow() es para el panel de "Gestionar Pedidos"
-    @Override
-    public Object[] toTableRow() {
-        return new Object[] {
-            this.id,
-            this.nombreProveedor,
-            this.fecha,
-            this.status
-        };
-    }
+	public void setDetalles(List<OrdenCompraDetalle> detalles) {
+		this.detalles = detalles;
+	}
 
-    // --- Getters y Setters ---
+	// --- Métodos de la interfaz Entidad ---
 
-    public int getProveedorId() {
-        return proveedorId;
-    }
+	@Override
+	public int getid() {
+		return this.id;
+	}
 
-    public void setProveedorId(int proveedorId) {
-        this.proveedorId = proveedorId;
-    }
+	@Override
+	public void setid(int id) {
+		this.id = id;
+	}
 
-    public Date getFecha() {
-        return fecha;
-    }
+	/**
+	 * Genera un arreglo de objetos para visualizar la orden en el panel de gestión.
+	 * <p>
+	 * Se utiliza en {@code PanelGestionPedidos}.
+	 * </p>
+	 * 
+	 * @return Arreglo con: [ID, Proveedor, Fecha, Status].
+	 */
+	@Override
+	public Object[] toTableRow() {
+		return new Object[] { this.id, this.nombreProveedor, this.fecha, this.status };
+	}
 
-    public void setFecha(Date fecha) {
-        this.fecha = fecha;
-    }
+	// --- Getters y Setters Estándar ---
 
-    public String getStatus() {
-        return status;
-    }
+	public int getProveedorId() {
+		return proveedorId;
+	}
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
+	public void setProveedorId(int proveedorId) {
+		this.proveedorId = proveedorId;
+	}
 
-    public String getNombreProveedor() {
-        return nombreProveedor;
-    }
+	public Date getFecha() {
+		return fecha;
+	}
 
-    public void setNombreProveedor(String nombreProveedor) {
-        this.nombreProveedor = nombreProveedor;
-    }
+	public void setFecha(Date fecha) {
+		this.fecha = fecha;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
+	public String getNombreProveedor() {
+		return nombreProveedor;
+	}
+
+	public void setNombreProveedor(String nombreProveedor) {
+		this.nombreProveedor = nombreProveedor;
+	}
 }

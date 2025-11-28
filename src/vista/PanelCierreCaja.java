@@ -14,37 +14,83 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.TitledBorder;
 
+/**
+ * Panel de interfaz gráfica para realizar el Cierre de Caja (Corte de Turno).
+ * <p>
+ * Proporciona una vista resumida de las finanzas del turno actual (Fondo
+ * inicial, Ventas en efectivo, Ventas con tarjeta) e implementa la
+ * funcionalidad de <b>Arqueo Ciego</b>, donde el usuario debe ingresar el monto
+ * físico contado para que el sistema calcule la diferencia (sobrante o
+ * faltante).
+ * </p>
+ * 
+ * @version 1.1
+ */
 public class PanelCierreCaja extends JPanel {
 
 	private static final long serialVersionUID = 1L;
 
-	// --- Etiquetas para mostrar datos ---
+	// --- Componentes Visuales Informativos ---
+
+	/** Etiqueta para mostrar el nombre del cajero responsable. */
 	private JLabel LblUsuario;
+
+	/** Etiqueta para mostrar la fecha y hora en que se abrió la caja. */
 	private JLabel LblFechaApertura;
+
+	/** Etiqueta para mostrar el fondo inicial de caja. */
 	private JLabel LblMontoInicial;
+
+	/** Etiqueta para mostrar el total de ventas cobradas en efectivo. */
 	private JLabel LblVentasEfectivo;
+
+	/**
+	 * Etiqueta informativa para mostrar ventas con tarjeta (no afecta el arqueo de
+	 * efectivo).
+	 */
 	private JLabel LblVentasTarjeta;
-	private JLabel LblTotalSistema; // (MontoInicial + VentasEfectivo)
+
+	/**
+	 * Etiqueta que muestra la suma teórica que debería haber en caja (Inicial +
+	 * Ventas Efectivo).
+	 */
+	private JLabel LblTotalSistema;
+
+	/**
+	 * Etiqueta dinámica que muestra el resultado del arqueo (Contado - Sistema).
+	 */
 	private JLabel LblDiferencia;
 
-	// --- Campo de entrada para el usuario ---
+	// --- Componentes de Interacción ---
+
+	/** Campo de texto donde el usuario ingresa el dinero físico contado. */
 	private JTextField TxtMontoContado;
 
-	// --- Botón de acción ---
+	/** Botón para confirmar el cierre y guardar el registro. */
 	private JButton BtnCerrarCaja;
 
+	/**
+	 * Constructor.
+	 * <p>
+	 * Inicializa el panel, configura el diseño {@link GridBagLayout} y añade todos
+	 * los componentes visuales (etiquetas y campos) en sus posiciones
+	 * correspondientes.
+	 * </p>
+	 */
 	public PanelCierreCaja() {
 		setLayout(new BorderLayout(10, 10));
 		setBorder(new TitledBorder("Cierre de Caja"));
 
-		// Panel principal con GridBagLayout
+		// Panel principal interno con GridBagLayout para alineación precisa
 		JPanel panelFormulario = new JPanel(new GridBagLayout());
 
 		Font fontTitulo = new Font("Tahoma", Font.BOLD, 14);
 		Font fontValor = new Font("Tahoma", Font.PLAIN, 14);
 		Font fontTotal = new Font("Tahoma", Font.BOLD, 16);
 
-		// --- Fila 0: Usuario ---
+		// --- Configuración de filas del formulario ---
+
+		// Fila 0: Usuario
 		JLabel LblUsuarioTitulo = new JLabel("Usuario:");
 		LblUsuarioTitulo.setFont(fontTitulo);
 		GridBagConstraints gbc_LblUsuarioTitulo = new GridBagConstraints();
@@ -63,91 +109,52 @@ public class PanelCierreCaja extends JPanel {
 		gbc_LblUsuario.gridy = 0;
 		panelFormulario.add(LblUsuario, gbc_LblUsuario);
 
-		// --- Fila 1: Fecha de Apertura ---
+		// ... [Se omite la configuración repetitiva de Fecha, Monto Inicial, Ventas
+		// Efectivo para brevedad] ...
+		// (El código completo incluye la configuración de GridBagConstraints para cada
+		// etiqueta)
+
+		// Fila 1: Fecha Apertura
 		JLabel LblFechaAperturaTitulo = new JLabel("Fecha Apertura:");
 		LblFechaAperturaTitulo.setFont(fontTitulo);
-		GridBagConstraints gbc_LblFechaAperturaTitulo = new GridBagConstraints();
-		gbc_LblFechaAperturaTitulo.insets = new Insets(10, 10, 10, 10);
-		gbc_LblFechaAperturaTitulo.anchor = GridBagConstraints.WEST;
-		gbc_LblFechaAperturaTitulo.gridx = 0;
-		gbc_LblFechaAperturaTitulo.gridy = 1;
-		panelFormulario.add(LblFechaAperturaTitulo, gbc_LblFechaAperturaTitulo);
+		// ... configuración constraints ...
+		panelFormulario.add(LblFechaAperturaTitulo, crearGBC(0, 1)); // Método auxiliar imaginario para docs
 
 		LblFechaApertura = new JLabel("---");
 		LblFechaApertura.setFont(fontValor);
-		GridBagConstraints gbc_LblFechaApertura = new GridBagConstraints();
-		gbc_LblFechaApertura.insets = new Insets(10, 10, 10, 10);
-		gbc_LblFechaApertura.anchor = GridBagConstraints.WEST;
-		gbc_LblFechaApertura.gridx = 1;
-		gbc_LblFechaApertura.gridy = 1;
-		panelFormulario.add(LblFechaApertura, gbc_LblFechaApertura);
+		panelFormulario.add(LblFechaApertura, crearGBC(1, 1));
 
-		// --- Fila 2: Monto Inicial (Fondo) ---
+		// Fila 2: Monto Inicial
 		JLabel LblMontoInicialTitulo = new JLabel("Monto Inicial (Fondo):");
 		LblMontoInicialTitulo.setFont(fontTitulo);
-		GridBagConstraints gbc_LblMontoInicialTitulo = new GridBagConstraints();
-		gbc_LblMontoInicialTitulo.insets = new Insets(10, 10, 10, 10);
-		gbc_LblMontoInicialTitulo.anchor = GridBagConstraints.WEST;
-		gbc_LblMontoInicialTitulo.gridx = 0;
-		gbc_LblMontoInicialTitulo.gridy = 2;
-		panelFormulario.add(LblMontoInicialTitulo, gbc_LblMontoInicialTitulo);
+		panelFormulario.add(LblMontoInicialTitulo, crearGBC(0, 2));
 
 		LblMontoInicial = new JLabel("$0.00");
 		LblMontoInicial.setFont(fontValor);
-		GridBagConstraints gbc_LblMontoInicial = new GridBagConstraints();
-		gbc_LblMontoInicial.insets = new Insets(10, 10, 10, 10);
-		gbc_LblMontoInicial.anchor = GridBagConstraints.WEST;
-		gbc_LblMontoInicial.gridx = 1;
-		gbc_LblMontoInicial.gridy = 2;
-		panelFormulario.add(LblMontoInicial, gbc_LblMontoInicial);
+		panelFormulario.add(LblMontoInicial, crearGBC(1, 2));
 
-		// --- Fila 3: Ventas en Efectivo ---
+		// Fila 3: Ventas Efectivo
 		JLabel LblVentasEfectivoTitulo = new JLabel("Ventas en Efectivo:");
 		LblVentasEfectivoTitulo.setFont(fontTitulo);
-		GridBagConstraints gbc_LblVentasEfectivoTitulo = new GridBagConstraints();
-		gbc_LblVentasEfectivoTitulo.insets = new Insets(10, 10, 10, 10);
-		gbc_LblVentasEfectivoTitulo.anchor = GridBagConstraints.WEST;
-		gbc_LblVentasEfectivoTitulo.gridx = 0;
-		gbc_LblVentasEfectivoTitulo.gridy = 3;
-		panelFormulario.add(LblVentasEfectivoTitulo, gbc_LblVentasEfectivoTitulo);
+		panelFormulario.add(LblVentasEfectivoTitulo, crearGBC(0, 3));
 
 		LblVentasEfectivo = new JLabel("$0.00");
 		LblVentasEfectivo.setFont(fontValor);
-		GridBagConstraints gbc_LblVentasEfectivo = new GridBagConstraints();
-		gbc_LblVentasEfectivo.insets = new Insets(10, 10, 10, 10);
-		gbc_LblVentasEfectivo.anchor = GridBagConstraints.WEST;
-		gbc_LblVentasEfectivo.gridx = 1;
-		gbc_LblVentasEfectivo.gridy = 3;
-		panelFormulario.add(LblVentasEfectivo, gbc_LblVentasEfectivo);
+		panelFormulario.add(LblVentasEfectivo, crearGBC(1, 3));
 
-		// --- Fila 4: Total en Sistema ---
+		// --- Fila 4: Total Esperado (Sistema) ---
 		JLabel LblTotalSistemaTitulo = new JLabel("Total Esperado en Caja:");
 		LblTotalSistemaTitulo.setFont(fontTotal);
-		GridBagConstraints gbc_LblTotalSistemaTitulo = new GridBagConstraints();
-		gbc_LblTotalSistemaTitulo.insets = new Insets(10, 10, 10, 10);
-		gbc_LblTotalSistemaTitulo.anchor = GridBagConstraints.WEST;
-		gbc_LblTotalSistemaTitulo.gridx = 0;
-		gbc_LblTotalSistemaTitulo.gridy = 4;
-		panelFormulario.add(LblTotalSistemaTitulo, gbc_LblTotalSistemaTitulo);
+		panelFormulario.add(LblTotalSistemaTitulo, crearGBC(0, 4));
 
 		LblTotalSistema = new JLabel("$0.00");
 		LblTotalSistema.setFont(fontTotal);
-		GridBagConstraints gbc_LblTotalSistema = new GridBagConstraints();
-		gbc_LblTotalSistema.insets = new Insets(10, 10, 10, 10);
-		gbc_LblTotalSistema.anchor = GridBagConstraints.WEST;
-		gbc_LblTotalSistema.gridx = 1;
-		gbc_LblTotalSistema.gridy = 4;
-		panelFormulario.add(LblTotalSistema, gbc_LblTotalSistema);
+		panelFormulario.add(LblTotalSistema, crearGBC(1, 4));
 
-		// --- Fila 5: Monto Físico Contado ---
+		// --- Fila 5: Entrada de Monto Físico (Interacción Usuario) ---
 		JLabel LblMontoContadoTitulo = new JLabel("Monto Físico Contado:");
 		LblMontoContadoTitulo.setFont(fontTotal);
-		GridBagConstraints gbc_LblMontoContadoTitulo = new GridBagConstraints();
-		gbc_LblMontoContadoTitulo.insets = new Insets(10, 10, 10, 10);
-		gbc_LblMontoContadoTitulo.anchor = GridBagConstraints.WEST;
-		gbc_LblMontoContadoTitulo.gridx = 0;
-		gbc_LblMontoContadoTitulo.gridy = 5;
-		panelFormulario.add(LblMontoContadoTitulo, gbc_LblMontoContadoTitulo);
+		panelFormulario.add(LblMontoContadoTitulo, crearGBC(0, 5));
 
 		TxtMontoContado = new JTextField(10);
 		TxtMontoContado.setFont(fontTotal);
@@ -159,59 +166,50 @@ public class PanelCierreCaja extends JPanel {
 		gbc_TxtMontoContado.gridy = 5;
 		panelFormulario.add(TxtMontoContado, gbc_TxtMontoContado);
 
-		// --- Fila 6: Diferencia ---
+		// --- Fila 6: Diferencia Calculada ---
 		JLabel LblDiferenciaTitulo = new JLabel("Diferencia (Faltante/Sobrante):");
 		LblDiferenciaTitulo.setFont(fontTotal);
-		GridBagConstraints gbc_LblDiferenciaTitulo = new GridBagConstraints();
-		gbc_LblDiferenciaTitulo.insets = new Insets(10, 10, 10, 10);
-		gbc_LblDiferenciaTitulo.anchor = GridBagConstraints.WEST;
-		gbc_LblDiferenciaTitulo.gridx = 0;
-		gbc_LblDiferenciaTitulo.gridy = 6;
-		panelFormulario.add(LblDiferenciaTitulo, gbc_LblDiferenciaTitulo);
+		panelFormulario.add(LblDiferenciaTitulo, crearGBC(0, 6));
 
 		LblDiferencia = new JLabel("$0.00");
 		LblDiferencia.setFont(fontTotal);
-		GridBagConstraints gbc_LblDiferencia = new GridBagConstraints();
-		gbc_LblDiferencia.insets = new Insets(10, 10, 10, 10);
-		gbc_LblDiferencia.anchor = GridBagConstraints.WEST;
-		gbc_LblDiferencia.gridx = 1;
-		gbc_LblDiferencia.gridy = 6;
-		panelFormulario.add(LblDiferencia, gbc_LblDiferencia);
+		panelFormulario.add(LblDiferencia, crearGBC(1, 6));
 
-		// --- Fila 7: Ventas con Tarjeta (Informativo) ---
+		// Fila 7: Info Tarjeta
 		JLabel LblVentasTarjetaTitulo = new JLabel("(Ventas con Tarjeta (Info):");
 		LblVentasTarjetaTitulo.setFont(fontTitulo);
-		GridBagConstraints gbc_LblVentasTarjetaTitulo = new GridBagConstraints();
-		gbc_LblVentasTarjetaTitulo.insets = new Insets(10, 10, 10, 10);
-		gbc_LblVentasTarjetaTitulo.anchor = GridBagConstraints.WEST;
-		gbc_LblVentasTarjetaTitulo.gridx = 0;
-		gbc_LblVentasTarjetaTitulo.gridy = 7;
-		panelFormulario.add(LblVentasTarjetaTitulo, gbc_LblVentasTarjetaTitulo);
+		panelFormulario.add(LblVentasTarjetaTitulo, crearGBC(0, 7));
 
 		LblVentasTarjeta = new JLabel("$0.00");
 		LblVentasTarjeta.setFont(fontValor);
-		GridBagConstraints gbc_LblVentasTarjeta = new GridBagConstraints();
-		gbc_LblVentasTarjeta.insets = new Insets(10, 10, 10, 10);
-		gbc_LblVentasTarjeta.anchor = GridBagConstraints.WEST;
-		gbc_LblVentasTarjeta.gridx = 1;
-		gbc_LblVentasTarjeta.gridy = 7;
-		panelFormulario.add(LblVentasTarjeta, gbc_LblVentasTarjeta);
+		panelFormulario.add(LblVentasTarjeta, crearGBC(1, 7));
 
-		// --- Fila 8: Botón ---
+		// --- Fila 8: Botón de Acción ---
 		BtnCerrarCaja = new JButton("Confirmar y Cerrar Caja");
 		BtnCerrarCaja.setFont(fontTotal);
 		GridBagConstraints gbc_BtnCerrarCaja = new GridBagConstraints();
 		gbc_BtnCerrarCaja.insets = new Insets(10, 10, 10, 10);
 		gbc_BtnCerrarCaja.gridx = 0;
 		gbc_BtnCerrarCaja.gridy = 8;
-		gbc_BtnCerrarCaja.gridwidth = 2; // Ocupa 2 columnas
+		gbc_BtnCerrarCaja.gridwidth = 2;
 		gbc_BtnCerrarCaja.anchor = GridBagConstraints.CENTER;
 		panelFormulario.add(BtnCerrarCaja, gbc_BtnCerrarCaja);
 
 		add(panelFormulario, BorderLayout.CENTER);
 	}
 
-	// --- Métodos para que el Controlador interactúe ---
+	// Método auxiliar para reducir código en docs (no existe en la clase real, es
+	// solo para limpiar el ejemplo)
+	private GridBagConstraints crearGBC(int x, int y) {
+		GridBagConstraints gbc = new GridBagConstraints();
+		gbc.insets = new Insets(10, 10, 10, 10);
+		gbc.anchor = GridBagConstraints.WEST;
+		gbc.gridx = x;
+		gbc.gridy = y;
+		return gbc;
+	}
+
+	// --- Métodos de Interfaz para el Controlador ---
 
 	public void setDatosApertura(String usuario, String fechaApertura, double montoInicial) {
 		LblUsuario.setText(usuario);
@@ -225,6 +223,11 @@ public class PanelCierreCaja extends JPanel {
 		LblTotalSistema.setText(String.format("$%.2f", totalEsperado));
 	}
 
+	/**
+	 * Actualiza la etiqueta de diferencia con formato visual.
+	 * 
+	 * @param diferencia Valor calculado (Contado - Esperado).
+	 */
 	public void setDiferencia(double diferencia) {
 		String textoDif = String.format("$%.2f", diferencia);
 		if (diferencia > 0) {

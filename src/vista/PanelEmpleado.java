@@ -10,19 +10,57 @@ import javax.swing.JTextField;
 import modelo.Empleado;
 import javax.swing.JComboBox;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.JPasswordField; // <-- Importante
+import javax.swing.JPasswordField;
 
+/**
+ * Panel de interfaz gráfica para la gestión de Empleados (Usuarios del
+ * sistema).
+ * <p>
+ * Hereda de {@link VistaGenerica} y permite administrar:
+ * <ul>
+ * <li>Datos personales (Nombre, Teléfono).</li>
+ * <li>Permisos de acceso (Rol: ADMIN, GENERAL, SUPERVISOR).</li>
+ * <li>Credenciales de seguridad (Contraseña).</li>
+ * </ul>
+ * </p>
+ * 
+ * @version 1.1
+ */
 public class PanelEmpleado extends VistaGenerica {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private JTextField Tnombre;
 	private JTextField TnumCel;
-	private JComboBox<String> comboRol;
-	private JPasswordField Tpassword; // --- MODIFICACIÓN 1: Añadir atributo para la contraseña
 
+	/** Selector de roles predefinidos. */
+	private JComboBox<String> comboRol;
+
+	/** Campo de texto enmascarado para la contraseña. */
+	private JPasswordField Tpassword;
+
+	/**
+	 * Constructor.
+	 * <p>
+	 * Configura el título "Empleados" y las columnas de la tabla: [ID, Nombre,
+	 * Teléfono, Rol]. La contraseña no se muestra en la tabla por seguridad.
+	 * </p>
+	 */
 	public PanelEmpleado() {
 		super("Empleados", new String[] { "Eid", "Nombre de Empleado", "Número Tel.", "Rol" });
 	}
 
+	/**
+	 * Construye el formulario de edición de empleados.
+	 * <p>
+	 * Utiliza {@link GridBagLayout} para organizar los campos de Nombre, Teléfono,
+	 * Rol (ComboBox) y Contraseña (PasswordField).
+	 * </p>
+	 * 
+	 * @return El panel configurado.
+	 */
 	@Override
 	protected JPanel crearPanelCampos() {
 		JPanel Panel = new JPanel();
@@ -69,7 +107,7 @@ public class PanelEmpleado extends VistaGenerica {
 		gbc_TnumCel.weightx = 1.0;
 		Panel.add(TnumCel, gbc_TnumCel);
 
-		// Fila 2: Rol
+		// Fila 2: Selector de Rol
 		JLabel Lrol = new JLabel("Rol:");
 		GridBagConstraints gbc_Lrol = new GridBagConstraints();
 		gbc_Lrol.anchor = GridBagConstraints.EAST;
@@ -87,8 +125,7 @@ public class PanelEmpleado extends VistaGenerica {
 		gbc_comboRol.gridy = 2;
 		Panel.add(comboRol, gbc_comboRol);
 
-		// --- MODIFICACIÓN 2: Añadir campo de contraseña al panel ---
-		// Fila 3: Contraseña
+		// Fila 3: Contraseña (JPasswordField)
 		JLabel Lpassword = new JLabel("Contraseña:");
 		GridBagConstraints gbc_Lpassword = new GridBagConstraints();
 		gbc_Lpassword.anchor = GridBagConstraints.EAST;
@@ -105,7 +142,7 @@ public class PanelEmpleado extends VistaGenerica {
 		gbc_Tpassword.gridy = 3;
 		Panel.add(Tpassword, gbc_Tpassword);
 
-		// Fila 4: Botón Limpiar (se mueve una fila hacia abajo)
+		// Fila 4: Botón Limpiar
 		JButton Blimpiar = new JButton("Limpiar");
 		GridBagConstraints gbc_Blimpiar = new GridBagConstraints();
 		gbc_Blimpiar.gridx = 1;
@@ -117,16 +154,27 @@ public class PanelEmpleado extends VistaGenerica {
 		return Panel;
 	}
 
+	/**
+	 * Limpia todos los campos del formulario, incluyendo la contraseña.
+	 */
 	@Override
 	public void limpiarCampos() {
 		Tnombre.setText("");
 		TnumCel.setText("");
 		Tbuscar.setText("");
 		comboRol.setSelectedIndex(-1);
-		Tpassword.setText(""); // --- MODIFICACIÓN 3: Limpiar campo de contraseña
+		Tpassword.setText("");
 		table.clearSelection();
 	}
 
+	/**
+	 * Carga los datos del empleado seleccionado en el formulario.
+	 * <p>
+	 * <b>Nota de Seguridad:</b> El campo de contraseña se deja en blanco
+	 * intencionalmente. El usuario solo debe escribir en él si desea cambiar la
+	 * contraseña actual.
+	 * </p>
+	 */
 	@Override
 	protected void cargarDatosFormulario() {
 		int filaSeleccionada = table.getSelectedRow();
@@ -141,18 +189,30 @@ public class PanelEmpleado extends VistaGenerica {
 			TnumCel.setText(tpNumero);
 			comboRol.setSelectedItem(rol);
 
-			// Por seguridad, la contraseña no se muestra. Si el usuario quiere cambiarla,
-			// puede escribir una nueva. Si la deja en blanco, la contraseña no se modifica.
+			// Por seguridad, la contraseña no se muestra.
 			Tpassword.setText("");
 		}
 	}
 
+	/**
+	 * Construye un objeto {@link Empleado} con los datos del formulario.
+	 * <p>
+	 * <b>Validación de Contraseña:</b>
+	 * <ul>
+	 * <li>Si es un registro NUEVO, la contraseña es obligatoria.</li>
+	 * <li>Si es una EDICIÓN, el campo vacío se puede interpretar como "no cambiar
+	 * contraseña" (aunque esta lógica debe ser soportada por el
+	 * DAO/Controlador).</li>
+	 * </ul>
+	 * </p>
+	 * 
+	 * @return Objeto empleado o {@code null} si hay errores de validación.
+	 */
 	@Override
 	public Empleado getDatosDelFormulario() {
 		String nombre = Tnombre.getText().trim();
 		String numeroTel = TnumCel.getText().trim();
 		String rol = (String) comboRol.getSelectedItem();
-		// --- MODIFICACIÓN 4: Obtener la contraseña del formulario ---
 		String password = new String(Tpassword.getPassword());
 
 		if (nombre.isEmpty()) {
@@ -162,7 +222,7 @@ public class PanelEmpleado extends VistaGenerica {
 
 		int id = filaSelect();
 
-		// Si es un empleado nuevo (id = -1), la contraseña es obligatoria
+		// Validación: Contraseña obligatoria solo para nuevos registros
 		if (id == -1 && password.isEmpty()) {
 			mostrarError("La contraseña no puede estar vacía para un nuevo empleado.");
 			return null;

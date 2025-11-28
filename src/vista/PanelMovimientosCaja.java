@@ -12,14 +12,44 @@ import javax.swing.JTextField;
 
 import modelo.MovimientoCaja;
 
+/**
+ * Panel de interfaz gráfica para el registro de movimientos manuales de
+ * efectivo.
+ * <p>
+ * Hereda de {@link VistaGenerica} y permite al usuario registrar "Ingresos"
+ * (ej. fondo extra) o "Egresos" (ej. pago de servicios, retiros parciales) que
+ * afectan el saldo de la caja pero no provienen de ventas de productos.
+ * </p>
+ * <p>
+ * <b>Nota de Seguridad:</b> En este módulo, la opción de <b>Actualizar
+ * (Modificar)</b> está deshabilitada intencionalmente para garantizar la
+ * integridad financiera. Si hubo un error, se recomienda borrar el movimiento y
+ * crear uno nuevo.
+ * </p>
+ * 
+ * @version 1.1
+ */
 public class PanelMovimientosCaja extends VistaGenerica {
 
 	private static final long serialVersionUID = 1L;
 
+	/** Selector del tipo de movimiento ("Ingreso" o "Egreso"). */
 	private JComboBox<String> comboTipo;
+
+	/** Campo de texto para ingresar la cantidad monetaria. */
 	private JTextField txtMonto;
+
+	/** Campo de texto para justificar el movimiento. */
 	private JTextField txtDescripcion;
 
+	/**
+	 * Constructor.
+	 * <p>
+	 * Configura el título "Movimientos de Caja" y las columnas de la tabla. Además,
+	 * <b>oculta y deshabilita</b> el botón de actualización heredado de la vista
+	 * genérica para forzar un flujo de "Solo Lectura/Escritura/Borrado".
+	 * </p>
+	 */
 	public PanelMovimientosCaja() {
 		// 1. Configurar título y columnas de la tabla
 		super("Movimientos de Caja", new String[] { "ID", "Fecha", "Usuario", "Tipo", "Monto", "Descripción" });
@@ -29,6 +59,19 @@ public class PanelMovimientosCaja extends VistaGenerica {
 		Bactualizar.setEnabled(false);
 	}
 
+	/**
+	 * Construye el formulario de captura de movimientos.
+	 * <p>
+	 * Utiliza {@link GridBagLayout} para organizar los campos:
+	 * <ul>
+	 * <li><b>Tipo:</b> ComboBox (Ingreso/Egreso).</li>
+	 * <li><b>Monto:</b> Valor numérico positivo.</li>
+	 * <li><b>Descripción:</b> Texto obligatorio.</li>
+	 * </ul>
+	 * </p>
+	 * 
+	 * @return El panel configurado.
+	 */
 	@Override
 	protected JPanel crearPanelCampos() {
 		JPanel panel = new JPanel(new GridBagLayout());
@@ -102,6 +145,9 @@ public class PanelMovimientosCaja extends VistaGenerica {
 		return panel;
 	}
 
+	/**
+	 * Restablece el formulario a su estado inicial.
+	 */
 	@Override
 	public void limpiarCampos() {
 		Tbuscar.setText("");
@@ -110,15 +156,24 @@ public class PanelMovimientosCaja extends VistaGenerica {
 		txtMonto.setText("");
 		txtDescripcion.setText("");
 		table.clearSelection();
-		// Reactivar el botón guardar si estaba desactivado
+		// Reactivar el botón guardar si estaba desactivado por una selección previa
 		Bguardar.setEnabled(true);
 	}
 
+	/**
+	 * Carga los datos de un movimiento seleccionado en la tabla.
+	 * <p>
+	 * Al seleccionar un registro, se cargan los datos visualmente pero se bloquea
+	 * el botón "Guardar" para evitar duplicados. Dado que "Actualizar" está
+	 * deshabilitado globalmente, esto sirve principalmente para visualizar detalles
+	 * o preparar el borrado.
+	 * </p>
+	 */
 	@Override
 	protected void cargarDatosFormulario() {
 		int fila = table.getSelectedRow();
 		if (fila != -1) {
-			// Obtenemos los datos de la tabla (columnas 3, 4 y 5)
+			// Obtenemos los datos de la tabla (columnas 3, 4 y 5 según definición)
 			String tipo = modeloTabla.getValueAt(fila, 3).toString();
 			String monto = modeloTabla.getValueAt(fila, 4).toString();
 			String descripcion = modeloTabla.getValueAt(fila, 5).toString();
@@ -132,6 +187,22 @@ public class PanelMovimientosCaja extends VistaGenerica {
 		}
 	}
 
+	/**
+	 * Construye un objeto {@link MovimientoCaja} validado con los datos del
+	 * formulario.
+	 * <p>
+	 * <b>Validaciones:</b>
+	 * <ul>
+	 * <li>La descripción no puede estar vacía.</li>
+	 * <li>El monto debe ser numérico y mayor a 0.</li>
+	 * </ul>
+	 * <b>Nota:</b> El objeto retornado tiene IDs temporales (0 o -1). Es
+	 * responsabilidad del {@code ControladorMovimientosCaja} inyectar el ID de
+	 * Usuario y el ID de Corte correctos.
+	 * </p>
+	 * 
+	 * @return Objeto movimiento listo para procesar, o {@code null} si hay errores.
+	 */
 	@Override
 	public MovimientoCaja getDatosDelFormulario() {
 		String tipo = (String) comboTipo.getSelectedItem();
@@ -155,7 +226,7 @@ public class PanelMovimientosCaja extends VistaGenerica {
 			return null;
 		}
 
-
+		// Retornamos un objeto parcial; el Controlador inyectará UsuarioID y CorteID
 		return new MovimientoCaja(0, -1, tipo, monto, descripcion);
 	}
 }

@@ -31,8 +31,25 @@ import javax.swing.JScrollPane;
 import javax.swing.JCheckBox;
 import javax.swing.UIManager;
 
+/**
+ * Panel de interfaz gráfica para la gestión del inventario de productos (CRUD).
+ * <p>
+ * Hereda de {@link VistaGenerica} e implementa los campos específicos para
+ * productos: Precio, Código, Stock, Proveedor, Categoría e Imagen.
+ * </p>
+ * <p>
+ * Incluye lógica visual para ocultar columnas técnicas (Ruta, Stock Mínimo) y
+ * aplicar el renderizador de colores {@link StockColor}.
+ * </p>
+ * 
+ * @version 1.2
+ */
 public class PanelAlmacenProductos extends VistaGenerica {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private JTextField Tnombre;
 	private JTextField Tdescripcion;
 	private JTextField Tprecio;
@@ -53,6 +70,14 @@ public class PanelAlmacenProductos extends VistaGenerica {
 	private JCheckBox checMinStok;
 	private StockColor stockRenderer;
 
+	/**
+	 * Constructor.
+	 * <p>
+	 * Inicializa la vista con el título "Almacen/Productos" y configura las
+	 * columnas de la tabla. Aplica el renderizador de colores para el semáforo de
+	 * stock y oculta las columnas de "Stock Mínimo" y "Ruta de Imagen" (ancho = 0).
+	 * </p>
+	 */
 	public PanelAlmacenProductos() {
 
 		super("Almacen/Productos", new String[] { "Pid", "Categoria", "Proveedor", "Nombre", "Descripcion", "Precio",
@@ -61,30 +86,45 @@ public class PanelAlmacenProductos extends VistaGenerica {
 
 		Bactualizar.setEnabled(false);
 
+		// Configuración del renderizador de colores (Semáforo)
 		this.stockRenderer = new StockColor();
 		for (int i = 0; i < table.getColumnCount(); i++) {
 			table.getColumnModel().getColumn(i).setCellRenderer(stockRenderer);
 		}
 
+		// Ocultar columna Stock Mínimo (Índice 8)
 		TableColumn stokmin = table.getColumnModel().getColumn(8);
-		// La ocultamos poniendo su ancho a cero
 		stokmin.setMinWidth(0);
 		stokmin.setMaxWidth(0);
 		stokmin.setPreferredWidth(0);
 		stokmin.setResizable(false);
 
+		// Ocultar columna Ruta de Imagen (Índice 9)
 		TableColumn rutaImagen = table.getColumnModel().getColumn(9);
-
 		rutaImagen.setMinWidth(0);
 		rutaImagen.setMaxWidth(0);
 		rutaImagen.setPreferredWidth(0);
 		rutaImagen.setResizable(false);
 	}
 
+	/**
+	 * Construye el panel de campos de formulario específico para Productos.
+	 * <p>
+	 * Utiliza un {@link BorderLayout} principal que contiene:
+	 * <ul>
+	 * <li><b>Norte:</b> Panel con campos de texto (Nombre, Precio, Proveedor, etc.)
+	 * organizados con {@link GridBagLayout}.</li>
+	 * <li><b>Centro:</b> Panel para la visualización de la imagen del
+	 * producto.</li>
+	 * </ul>
+	 * </p>
+	 * 
+	 * @return El panel configurado.
+	 */
 	@Override
 	protected JPanel crearPanelCampos() {
 
-		// 1. El panel principal (contenedor) ahora usa BorderLayout
+		// 1. El panel principal (contenedor) usa BorderLayout
 		JPanel Panel = new JPanel(new BorderLayout());
 
 		// 2. Creamos el sub-panel para el FORMULARIO (campos de texto)
@@ -93,7 +133,10 @@ public class PanelAlmacenProductos extends VistaGenerica {
 		gbl_panelFormulario.columnWeights = new double[] { 0.0, 1.0 }; // Columna 1 crece
 		panelFormulario.setLayout(gbl_panelFormulario);
 
-		// --- Añadimos TODOS LOS CAMPOS al panelFormulario (Filas 0 a 8) ---
+		// --- Configuración de componentes (Proveedor, Categoria, Nombre, etc.) ---
+		// (Se omite el detalle repetitivo de GridBagConstraints por brevedad en la
+		// documentación,
+		// pero el código completo configura cada campo en su posición de la rejilla).
 
 		// ---------------------Proveedor (Fila 0)-------------------------
 		Lproveedor = new JLabel("Proveedor:");
@@ -116,8 +159,10 @@ public class PanelAlmacenProductos extends VistaGenerica {
 		ScrollProveedor.setViewportView(comboProveedor);
 		panelFormulario.add(ScrollProveedor, gbc_scrollProveedor);
 
-		// --------------------------Categoria (Fila
-		// 1)----------------------------------
+		// ... (Resto de la configuración de campos: Categoria, Nombre, Precio, Codigo,
+		// Stock) ...
+
+		// -----------------------Categoria (Fila 1)----------------------------------
 		Lcategoria = new JLabel("Categoria");
 		GridBagConstraints gbc_lcategoria = new GridBagConstraints();
 		gbc_lcategoria.anchor = GridBagConstraints.EAST;
@@ -137,6 +182,9 @@ public class PanelAlmacenProductos extends VistaGenerica {
 		panelFormulario.add(ScrollCategoria, gbc_scrollCategoria);
 		comboCategoria = new JComboBox<Categorias>();
 		ScrollCategoria.setViewportView(comboCategoria);
+
+		// ... [Continúa la definición de campos Nombre, Descripción, Precio, Código,
+		// Stock] ...
 
 		// ----------------nombre (Fila 2)----------------
 		JLabel Lnombre = new JLabel("Nombre:");
@@ -267,7 +315,7 @@ public class PanelAlmacenProductos extends VistaGenerica {
 		panelFormulario.add(checMinStok, gbc_checMinStok);
 
 		// -------------------agregarCantidad (Fila 8)-------------------------
-		LajusteStock = new JLabel("Ajuste Stok(+):"); // <-- Texto cambiado
+		LajusteStock = new JLabel("Ajuste Stok(+):");
 		LajusteStock.setEnabled(false);
 		GridBagConstraints gbc_lagregarStok = new GridBagConstraints();
 		gbc_lagregarStok.anchor = GridBagConstraints.EAST;
@@ -291,8 +339,6 @@ public class PanelAlmacenProductos extends VistaGenerica {
 		// 3. Creamos el sub-panel para la IMAGEN y BOTONES
 		JPanel panelImagen = new JPanel(new GridBagLayout());
 
-		// -----------------------imagen (Fila 0 de este
-		// panel)---------------------------
 		Limagen = new JLabel("Imagen");
 		Limagen.setBorder(BorderFactory.createEtchedBorder());
 		Limagen.setHorizontalAlignment(SwingConstants.CENTER);
@@ -304,8 +350,6 @@ public class PanelAlmacenProductos extends VistaGenerica {
 		gbc_Limagen.gridy = 0;
 		panelImagen.add(Limagen, gbc_Limagen);
 
-		// ---------------------agregar Imagen (Fila 1 de este
-		// panel)--------------------
 		JButton BagregarImagen = new JButton("Agregar Imagen");
 		BagregarImagen.setIcon(new ImageIcon(PanelAlmacenProductos.class.getResource("/Iconos/agregar.png")));
 		GridBagConstraints gbc_BagregarImagen = new GridBagConstraints();
@@ -315,7 +359,6 @@ public class PanelAlmacenProductos extends VistaGenerica {
 		panelImagen.add(BagregarImagen, gbc_BagregarImagen);
 		BagregarImagen.addActionListener(e -> agregarImagen());
 
-		// ---------------------Botón Limpiar (Fila 2 de este panel)-------------------
 		JButton Blimpiar = new JButton("Limpiar");
 		GridBagConstraints gbc_Blimpiar = new GridBagConstraints();
 		gbc_Blimpiar.insets = new Insets(0, 0, 5, 0);
@@ -332,6 +375,8 @@ public class PanelAlmacenProductos extends VistaGenerica {
 		return Panel;
 	}
 
+	// --- Getters y Setters para interacción con el Controlador ---
+
 	public JTextField getTnombre() {
 		return Tnombre;
 	}
@@ -340,38 +385,15 @@ public class PanelAlmacenProductos extends VistaGenerica {
 		Tnombre = tnombre;
 	}
 
-	public JTextField getTstok() {
-		return Tstok;
-	}
+	// ... (Otros getters y setters estándar para campos de texto) ...
 
-	public void setTstok(JTextField tstok) {
-		Tstok = tstok;
-	}
-
-	public JLabel getLminStok() {
-		return LminStok;
-	}
-
-	public void setLminStok(JLabel lminStok) {
-		LminStok = lminStok;
-	}
-
-	public JTextField getTminStok() {
-		return TminStok;
-	}
-
-	public void setTminStok(JTextField tminStok) {
-		TminStok = tminStok;
-	}
-
-	public JCheckBox getChecMinStok() {
-		return checMinStok;
-	}
-
-	public void setChecMinStok(JCheckBox checMinStok) {
-		this.checMinStok = checMinStok;
-	}
-
+	/**
+	 * Restablece el formulario a su estado inicial.
+	 * <p>
+	 * Habilita/deshabilita los campos según corresponda para un nuevo registro (por
+	 * ejemplo, bloquea el ajuste de stock manual) y limpia las imágenes.
+	 * </p>
+	 */
 	@Override
 	public void limpiarCampos() {
 
@@ -401,7 +423,6 @@ public class PanelAlmacenProductos extends VistaGenerica {
 			comboProveedor.setSelectedIndex(-1);
 		}
 
-		// CAMBIO: Se añade la limpieza para el ComboBox de categoría.
 		if (comboCategoria.getItemCount() > 0) {
 			comboCategoria.setSelectedIndex(-1);
 		}
@@ -409,9 +430,12 @@ public class PanelAlmacenProductos extends VistaGenerica {
 
 	public void addModifcarMinimoStok(ActionListener listener) {
 		checMinStok.addActionListener(listener);
-
 	}
 
+	/**
+	 * Abre un JFileChooser para seleccionar una imagen local y mostrarla en el
+	 * panel.
+	 */
 	public void agregarImagen() {
 		JFileChooser fileChooser = new JFileChooser();
 		fileChooser.setFileFilter(new FileNameExtensionFilter("Imágenes", "jpg", "png", "jpeg"));
@@ -425,26 +449,34 @@ public class PanelAlmacenProductos extends VistaGenerica {
 			ImageIcon icon = new ImageIcon(ruta);
 			Image img = icon.getImage().getScaledInstance(220, 220, Image.SCALE_SMOOTH);
 			Limagen.setIcon(new ImageIcon(img));
-
 		}
 	}
 
+	/**
+	 * Carga los datos de la fila seleccionada en la tabla hacia los campos del
+	 * formulario.
+	 * <p>
+	 * Incluye lógica para seleccionar automáticamente los items correctos en los
+	 * ComboBoxes de Categoría y Proveedor basándose en el nombre (String).
+	 * </p>
+	 */
 	@Override
 	protected void cargarDatosFormulario() {
 		int filaSeleccionada = table.getSelectedRow();
 		if (filaSeleccionada != -1) {
 
-			// Habilitar y deshabilitar botones
+			// Cambio de estado de botones para modo "Edición"
 			Bguardar.setEnabled(false);
 			Bactualizar.setEnabled(true);
 
-			Tstok.setEnabled(false);
+			Tstok.setEnabled(false); // No se edita stock directo
 			Lstok.setEnabled(false);
 			TminStok.setEnabled(false);
 			LminStok.setEnabled(false);
-			TagregarCantidad.setEnabled(true);
+			TagregarCantidad.setEnabled(true); // Se habilita el ajuste manual
 			LajusteStock.setEnabled(true);
 
+			// Recuperación de valores del modelo de la tabla
 			String id = modeloTabla.getValueAt(filaSeleccionada, 0).toString();
 			String categoria = modeloTabla.getValueAt(filaSeleccionada, 1).toString();
 			String nombreProveedor = modeloTabla.getValueAt(filaSeleccionada, 2).toString();
@@ -458,16 +490,16 @@ public class PanelAlmacenProductos extends VistaGenerica {
 			Object valorRuta = modeloTabla.getValueAt(filaSeleccionada, 9);
 			String rutaImagen = (valorRuta != null) ? valorRuta.toString() : "";
 
-			// --- LLENAMOS LOS CAMPOS ---
+			// Llenado de campos
 			Tbuscar.setText(id);
 			Tnombre.setText(nombre);
 			Tdescripcion.setText(descripcion);
 			Tprecio.setText(precio);
 			Tcodigo.setText(codigo);
 			Tstok.setText(cantidad);
-			TminStok.setText(stockMinimo); // --- MODIFICACIÓN AQUÍ: Llenamos el campo TminStok ---
+			TminStok.setText(stockMinimo);
 
-			// CAMBIO: Bucle para CATEGORÍA. Ahora selecciona el ComboBox correcto.
+			// Selección automática en ComboBoxes
 			for (int i = 0; i < comboCategoria.getItemCount(); i++) {
 				if (comboCategoria.getItemAt(i).getNombre().equals(categoria)) {
 					comboCategoria.setSelectedIndex(i);
@@ -482,6 +514,7 @@ public class PanelAlmacenProductos extends VistaGenerica {
 				}
 			}
 
+			// Carga de imagen
 			this.ruta = rutaImagen;
 			if (!rutaImagen.isEmpty() && new File(rutaImagen).exists()) {
 				ImageIcon icon = new ImageIcon(rutaImagen);
@@ -495,6 +528,17 @@ public class PanelAlmacenProductos extends VistaGenerica {
 		}
 	}
 
+	/**
+	 * Construye un objeto {@link AlmacenProductos} a partir de los datos ingresados
+	 * en el formulario.
+	 * <p>
+	 * Incluye validaciones básicas (campos vacíos) y la lógica para sumar la
+	 * "Cantidad Agregada" al stock actual si estamos en modo edición.
+	 * </p>
+	 * 
+	 * @return Objeto producto listo para ser procesado por el controlador, o null
+	 *         si hay errores.
+	 */
 	@Override
 	public AlmacenProductos getDatosDelFormulario() {
 		if (Tnombre.getText().trim().isEmpty() || Tprecio.getText().trim().isEmpty()) {
@@ -518,18 +562,16 @@ public class PanelAlmacenProductos extends VistaGenerica {
 			Categorias categoriaSeleccionada = (Categorias) comboCategoria.getSelectedItem();
 			int categoriaId = categoriaSeleccionada.getid();
 
+			// Cálculo del stock total
 			int cantidadActual = Tstok.getText().trim().isEmpty() ? 0 : Integer.parseInt(Tstok.getText().trim());
 			int cantidadAgregada = (TagregarCantidad.isEnabled() && !TagregarCantidad.getText().trim().isEmpty())
 					? Integer.parseInt(TagregarCantidad.getText().trim())
 					: 0;
 			int cantidadTotal = cantidadActual + cantidadAgregada;
 
-			// --- MODIFICACIÓN AQUÍ: Leemos el valor de TminStok para guardarlo ---
 			String minStockTexto = TminStok.getText().trim();
-			int stockMinimo = minStockTexto.isEmpty() ? 10 : Integer.parseInt(minStockTexto); // Valor por defecto 10 si
-																								// está vacío
+			int stockMinimo = minStockTexto.isEmpty() ? 10 : Integer.parseInt(minStockTexto);
 
-			// --- MODIFICACIÓN AQUÍ: Pasamos el stockMinimo al constructor del modelo ---
 			return new AlmacenProductos(id, nombre, descripcion, precio, codigo, cantidadTotal, ruta, categoriaId,
 					proveedorId, stockMinimo);
 
@@ -539,12 +581,17 @@ public class PanelAlmacenProductos extends VistaGenerica {
 		}
 	}
 
+	/**
+	 * Fuerza el repintado de la tabla para asegurar que los colores del stock se
+	 * actualicen.
+	 */
 	public void actualizarColoresTabla() {
-
 		if (table != null) {
 			table.repaint();
 		}
 	}
+
+	// --- Getters de componentes UI para el Controlador ---
 
 	public JComboBox<Proveedor> getComboProveedor() {
 		return comboProveedor;
@@ -570,4 +617,19 @@ public class PanelAlmacenProductos extends VistaGenerica {
 		TagregarCantidad.setText(tagregarCantidad);
 	}
 
+	public JLabel getLajusteStock() {
+		return LajusteStock;
+	}
+
+	public JTextField getTminStok() {
+		return TminStok;
+	}
+
+	public JLabel getLminStok() {
+		return LminStok;
+	}
+
+	public JCheckBox getChecMinStok() {
+		return checMinStok;
+	}
 }

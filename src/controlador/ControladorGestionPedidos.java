@@ -21,23 +21,51 @@ import persistencia.ProveedorDAO;
 import vista.PanelCrearPedido;
 import vista.PanelGestionPedidos;
 
-// 1. Hereda de Controlador_Generico para reusar la tabla y la búsqueda
+/**
+ * Controlador para la administración de Órdenes de Compra (Pedidos a
+ * Proveedores).
+ * <p>
+ * Hereda de {@link ControladorGenerico} para aprovechar la funcionalidad de
+ * listado y búsqueda en tabla, pero implementa lógica específica para:
+ * <ul>
+ * <li>Recepción de mercancía (impacto en inventario).</li>
+ * <li>Creación de nuevos pedidos (abre un sub-panel).</li>
+ * <li>Cancelación lógica de pedidos.</li>
+ * </ul>
+ * </p>
+ * * @version 1.2
+ */
 public class ControladorGestionPedidos extends ControladorGenerico<OrdenCompra> {
 
+	/** Referencia a la vista específica de gestión. */
 	private PanelGestionPedidos vistaGestion;
+
+	/** Usuario actual (necesario para registrar quién recibió el pedido). */
 	private Empleado usuarioActual;
 
-	// 2. DAOs adicionales que este controlador necesita
+	// DAOs auxiliares para las operaciones complejas
 	private OrdenCompraDetalleDAO detalleDAO;
 	private AlmacenProductosDAO almacenDAO;
 	private EntradaInventarioDAO entradaDAO;
-	private ProveedorDAO proveedorDAO; // Para el popup de "Crear"
+	private ProveedorDAO proveedorDAO;
 
-	// 3. El constructor recibe el usuario (¡importante!)
+	/**
+	 * Constructor principal.
+	 * <p>
+	 * Inicializa los DAOs auxiliares y configura los listeners para los botones
+	 * específicos de esta vista ("Recibir", "Crear Nuevo", "Ver Detalles").
+	 * </p>
+	 * * @param modelo DAO principal de Órdenes de Compra.
+	 * 
+	 * @param vista      Panel de gestión.
+	 * @param usuario    Empleado logueado.
+	 * @param almacenDAO DAO de productos (para actualizar stock).
+	 * @param provDAO    DAO de proveedores.
+	 */
 	public ControladorGestionPedidos(OrdenCompraDAO modelo, PanelGestionPedidos vista, Empleado usuario,
 			AlmacenProductosDAO almacenDAO, ProveedorDAO provDAO) {
 
-		super(modelo, vista); // Llama al constructor genérico (que ya llama a mostrarTodo())
+		super(modelo, vista); // Llama al constructor padre para inicializar la tabla
 
 		this.vistaGestion = vista;
 		this.usuarioActual = usuario;
@@ -45,18 +73,38 @@ public class ControladorGestionPedidos extends ControladorGenerico<OrdenCompra> 
 		// Instanciamos los DAOs que usaremos
 		this.detalleDAO = new OrdenCompraDetalleDAO();
 		this.entradaDAO = new EntradaInventarioDAO();
-		this.almacenDAO = almacenDAO; // Reusamos el que viene del constructor
-		this.proveedorDAO = provDAO; // Reusamos el que viene del constructor
+		this.almacenDAO = almacenDAO;
+		this.proveedorDAO = provDAO;
 
-		// 4. Añadimos los listeners para los botones NUEVOS
+		// Listeners personalizados
 		this.vistaGestion.addRecibirPedidoListener(e -> recibirPedido());
 		this.vistaGestion.addCrearNuevoPedidoListener(e -> mostrarPanelCrearPedido());
 		this.vistaGestion.addVerDetallesListener(e -> verDetalles());
-		// Sobrescribimos el botón "Borrar" genérico para que "Cancele"
+
+		// Sobrescribimos el comportamiento del botón "Borrar" para que ejecute
+		// "Cancelar"
 		vista.addBorrarListener(e -> cancelarPedido());
 	}
 
-	// 5. Método para el botón "Recibir Pedido"
+	/**
+	 * Procesa la recepción de mercancía de un pedido seleccionado.
+	 * <p>
+	 * <b>Flujo de la operación:</b>
+	 * <ol>
+	 * <li>Verifica que el pedido esté en estado "Pendiente".</li>
+	 * <li>Solicita confirmación al usuario.</li>
+	 * <li>Recupera los productos del pedido ({@code detalleDAO}).</li>
+	 * <li>Por cada producto:
+	 * <ul>
+	 * <li>Aumenta el stock en {@code TablaAlmacen_Productos}.</li>
+	 * <li>Crea un registro de auditoría en {@code TablaEntradasInventario}
+	 * vinculado al usuario actual.</li>
+	 * </ul>
+	 * </li>
+	 * <li>Actualiza el estado del pedido a "Recibido".</li>
+	 * </ol>
+	 * </p>
+	 */
 	private void recibirPedido() {
 		int id = vista.filaSelect();
 		if (id == -1) {
@@ -91,15 +139,15 @@ public class ControladorGestionPedidos extends ControladorGenerico<OrdenCompra> 
 
 			// 2. Recorrer los detalles y actualizar el stock
 			for (OrdenCompraDetalle det : detalles) {
-				// 2.1 Aumentar el stock
+				// 2.1 Aumentar el stock físico
 				almacenDAO.aumentarStock(det.getProductoId(), det.getCantidadPedida());
 
-				// 2.2 Registrar en el historial de entradas (¡REUSAMOS TU LÓGICA!)
+				// 2.2 Registrar en el historial de entradas (Auditoría)
 				AlmacenProductos producto = almacenDAO.buscarPorID(det.getProductoId());
 				String descripcionEntrada = (producto != null) ? producto.getDescripcion() : "Recepción Pedido #" + id;
 
 				EntradaInventario entrada = new EntradaInventario(det.getProductoId(), det.getCantidadPedida(),
-						new Date(), this.usuarioActual.getid(), // ¡Usamos el usuario que está logueado!
+						new Date(), this.usuarioActual.getid(), // ¡Usuario que recibe!
 						descripcionEntrada);
 				entradaDAO.agregar(entrada);
 			}
@@ -107,40 +155,46 @@ public class ControladorGestionPedidos extends ControladorGenerico<OrdenCompra> 
 			// 3. Actualizar el status del pedido a "Recibido"
 			((OrdenCompraDAO) this.modelo).modificarStatus(id, "Recibido");
 
-			// 4. Refrescar la tabla
+			// 4. Refrescar la tabla para mostrar el nuevo estado
 			mostrarTodo();
 			vista.mostrarMensaje("Pedido #" + id + " recibido con éxito. Inventario actualizado.");
 		}
 	}
 
-	// 6. Método para el botón "Crear Nuevo Pedido"
+	/**
+	 * Abre un panel emergente (modal) para crear una nueva orden de compra.
+	 * <p>
+	 * Instancia el {@link PanelCrearPedido} y su controlador correspondiente,
+	 * mostrándolo dentro de un {@code JOptionPane}. Al cerrar la ventana, se
+	 * refresca la lista principal para mostrar el nuevo pedido (si se creó).
+	 * </p>
+	 */
 	private void mostrarPanelCrearPedido() {
-		// Creamos la vista (Módulo 1)
 		PanelCrearPedido panelCrear = new PanelCrearPedido();
 
-		// Creamos su controlador
-		new ControladorCrearPedido((OrdenCompraDAO) this.modelo, // Reusamos el DAO de órdenes
-				this.almacenDAO, // Reusamos el DAO de productos
-				this.proveedorDAO, // Reusamos el DAO de proveedores
-				panelCrear);
+		new ControladorCrearPedido((OrdenCompraDAO) this.modelo, this.almacenDAO, this.proveedorDAO, panelCrear);
 
-		// Mostramos el panel en una ventana emergente (JOptionPane)
-		JOptionPane.showMessageDialog(vistaGestion, // El panel padre
-				panelCrear, // El panel a mostrar
-				"Crear Nuevo Pedido a Proveedor", // Título de la ventana
-				JOptionPane.PLAIN_MESSAGE, null // Sin ícono
-		);
+		JOptionPane.showMessageDialog(vistaGestion, panelCrear, "Crear Nuevo Pedido a Proveedor",
+				JOptionPane.PLAIN_MESSAGE, null);
 
-		// Al cerrar el popup, refrescamos la lista de pedidos
 		mostrarTodo();
 	}
 
-	// 7. Sobrescribimos el método borrar() de la clase padre
+	/**
+	 * Sobrescribe la acción de borrar para implementar una "Cancelación Lógica".
+	 * <p>
+	 * En lugar de eliminar el registro físico, cambia el estado a "Cancelado",
+	 * manteniendo el historial.
+	 * </p>
+	 */
 	@Override
 	public void borrar() {
 		cancelarPedido();
 	}
 
+	/**
+	 * Cancela un pedido que aún no ha sido recibido.
+	 */
 	private void cancelarPedido() {
 		int id = vista.filaSelect();
 		if (id == -1) {
@@ -162,13 +216,19 @@ public class ControladorGestionPedidos extends ControladorGenerico<OrdenCompra> 
 				"Confirmar Cancelación", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
 		if (confirm == JOptionPane.YES_OPTION) {
-			// 3. Actualizar el status del pedido a "Cancelado"
 			((OrdenCompraDAO) this.modelo).modificarStatus(id, "Cancelado");
-			mostrarTodo(); // Refrescar
+			mostrarTodo();
 		}
 	}
 
-	// --- MÉTODO NUEVO PARA VER DETALLES ---
+	/**
+	 * Muestra un cuadro de diálogo con el detalle de productos de una orden
+	 * seleccionada.
+	 * <p>
+	 * Utiliza {@code OrdenCompraDetalleDAO} para recuperar los renglones y los
+	 * muestra en una JTable de solo lectura.
+	 * </p>
+	 */
 	private void verDetalles() {
 		int id = vista.filaSelect();
 		if (id == -1) {
@@ -176,14 +236,12 @@ public class ControladorGestionPedidos extends ControladorGenerico<OrdenCompra> 
 			return;
 		}
 
-		// Buscar la orden para tener el nombre del proveedor
 		OrdenCompra orden = ((OrdenCompraDAO) this.modelo).buscarPorID(id);
 		if (orden == null) {
 			vista.mostrarError("No se encontró la orden.");
 			return;
 		}
 
-		// 1. Buscar los detalles en la BD
 		List<OrdenCompraDetalle> detalles = detalleDAO.buscarDetallesPorOrdenID(id);
 
 		if (detalles.isEmpty()) {
@@ -191,7 +249,7 @@ public class ControladorGestionPedidos extends ControladorGenerico<OrdenCompra> 
 			return;
 		}
 
-		// 2. Crear un modelo de tabla para el popup
+		// Construcción de la tabla temporal
 		String[] columnas = { "ID Producto", "Producto", "Descripción", "Cantidad Pedida" };
 		DefaultTableModel model = new DefaultTableModel(columnas, 0);
 
@@ -200,16 +258,13 @@ public class ControladorGestionPedidos extends ControladorGenerico<OrdenCompra> 
 					det.getCantidadPedida() });
 		}
 
-		// 3. Crear la tabla y meterla en un JScrollPane
 		JTable tablaDetalles = new JTable(model);
-		tablaDetalles.setEnabled(false); // Para que no se pueda editar
+		tablaDetalles.setEnabled(false);
 		JScrollPane scrollPane = new JScrollPane(tablaDetalles);
-		scrollPane.setPreferredSize(new Dimension(500, 250)); // Tamaño del popup
+		scrollPane.setPreferredSize(new Dimension(500, 250));
 
-		// 4. Mostrar el JOptionPane con la tabla
-		JOptionPane.showMessageDialog(vista, // Padre
-				scrollPane, // Contenido
-				"Detalles del Pedido #" + id + " (Proveedor: " + orden.getNombreProveedor() + ")", // Título
+		JOptionPane.showMessageDialog(vista, scrollPane,
+				"Detalles del Pedido #" + id + " (Proveedor: " + orden.getNombreProveedor() + ")",
 				JOptionPane.INFORMATION_MESSAGE);
 	}
 }

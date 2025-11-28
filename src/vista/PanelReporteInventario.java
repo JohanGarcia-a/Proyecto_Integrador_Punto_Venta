@@ -1,27 +1,71 @@
 package vista;
 
-import javax.swing.*; 
+import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 import java.awt.*;
 import java.awt.event.ActionListener;
 
+/**
+ * Panel de interfaz gráfica para la generación de reportes relacionados con el
+ * Almacén.
+ * <p>
+ * Proporciona acceso rápido a tres tipos de consultas clave:
+ * <ul>
+ * <li><b>Stock Bajo:</b> Productos que necesitan reabastecimiento urgente.</li>
+ * <li><b>Inventario Completo:</b> Valoración total de la mercancía.</li>
+ * <li><b>Historial de Entradas:</b> Auditoría de quién agregó stock y
+ * cuándo.</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Incluye un botón inteligente para exportar a PDF (JasperReports) que solo se
+ * habilita cuando hay datos visibles en la tabla.
+ * </p>
+ * 
+ * @version 1.1
+ */
 public class PanelReporteInventario extends JPanel {
-	private JButton btnStockBajo;
-	private JButton btnMostrarInventarioCompleto;
-	private JButton btnMostrarHistorialEntradas;
-	private JButton btnVerImprimirInventarioJasper; // Botón para Jasper
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	/** Botón para consultar productos con stock menor al mínimo permitido. */
+	private JButton btnStockBajo;
+
+	/** Botón para listar todo el catálogo actual. */
+	private JButton btnMostrarInventarioCompleto;
+
+	/** Botón para ver la bitácora de ingresos de mercancía. */
+	private JButton btnMostrarHistorialEntradas;
+
+	/** Botón para generar el documento PDF basado en la consulta actual. */
+	private JButton btnVerImprimirInventarioJasper;
+
+	/** Tabla para visualizar los resultados de cualquiera de las 3 consultas. */
 	private JTable tablaResultados;
+
+	/** Modelo de datos para la tabla. */
 	private DefaultTableModel modeloTabla;
 
+	/**
+	 * Constructor.
+	 * <p>
+	 * Configura el diseño del panel, inicializa los botones de acción y prepara la
+	 * tabla de resultados en modo de "solo lectura" (no editable).
+	 * </p>
+	 */
 	public PanelReporteInventario() {
 		setLayout(new BorderLayout(10, 10));
 		setBorder(new TitledBorder("Generar Reporte de Inventario"));
 
-		// Panel superior con los botones de acción
+		// Panel superior con los botones de acción (FlowLayout para alineación
+		// izquierda)
 		JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.LEFT));
+
 		btnStockBajo = new JButton("Mostrar Stock Bajo");
 		btnMostrarInventarioCompleto = new JButton("Mostrar Inventario Completo");
 		btnMostrarHistorialEntradas = new JButton("Mostrar Historial de Entradas");
@@ -30,34 +74,40 @@ public class PanelReporteInventario extends JPanel {
 		panelBotones.add(btnMostrarInventarioCompleto);
 		panelBotones.add(btnMostrarHistorialEntradas);
 
-		// Botón para generar el reporte Jasper
+		// Configuración del botón Jasper
 		btnVerImprimirInventarioJasper = new JButton("Ver/Imprimir Reporte");
-		btnVerImprimirInventarioJasper.setEnabled(false); // Se activa al mostrar datos
+		btnVerImprimirInventarioJasper.setEnabled(false); // Deshabilitado por defecto hasta que haya datos
 		panelBotones.add(btnVerImprimirInventarioJasper);
 
 		add(panelBotones, BorderLayout.NORTH);
 
-		// Tabla para mostrar los resultados
+		// Configuración de la Tabla
 		modeloTabla = new DefaultTableModel();
 		tablaResultados = new JTable(modeloTabla);
-		// Evitar edición directa en la tabla
+
+		// Truco para evitar la edición de celdas por parte del usuario
 		tablaResultados.setDefaultEditor(Object.class, null);
+
 		add(new JScrollPane(tablaResultados), BorderLayout.CENTER);
 	}
 
 	/**
-	 * Actualiza la tabla con los datos del reporte generado. Habilita o deshabilita
-	 * el botón de Jasper según si hay datos.
+	 * Actualiza la tabla con los datos provenientes del controlador.
+	 * <p>
+	 * Además, controla el estado del botón de impresión: Si la tabla recibe datos,
+	 * el botón se habilita; si la tabla se vacía, el botón se deshabilita.
+	 * </p>
 	 * 
-	 * @param tableModel El modelo de tabla con los datos.
+	 * @param tableModel El modelo de tabla con los nuevos datos (columnas y filas).
 	 */
 	public void mostrarResultados(TableModel tableModel) {
 		tablaResultados.setModel(tableModel);
-		// Habilita el botón Jasper solo si la tabla tiene filas
+		// Lógica de UI: Habilita el botón Jasper solo si la tabla tiene al menos una
+		// fila
 		btnVerImprimirInventarioJasper.setEnabled(tableModel.getRowCount() > 0);
 	}
 
-	// --- Métodos para añadir Listeners a los botones ---
+	// --- Métodos para delegar la gestión de eventos al Controlador ---
 
 	public void addStockBajoListener(ActionListener listener) {
 		btnStockBajo.addActionListener(listener);
@@ -75,7 +125,8 @@ public class PanelReporteInventario extends JPanel {
 		btnVerImprimirInventarioJasper.addActionListener(listener);
 	}
 
-	// --- Getter opcional para la tabla (si se necesitara externamente) ---
+	// --- Getters ---
+
 	public JTable getTablaResultados() {
 		return tablaResultados;
 	}
